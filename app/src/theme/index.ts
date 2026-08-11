@@ -11,6 +11,16 @@ export const espaco = {
   xxl: 32,
 } as const;
 
+/**
+ * Altura da barra de abas, sem contar o safe area de baixo.
+ *
+ * O expo-router 57 não expõe `useBottomTabBarHeight` por um caminho público,
+ * então em vez de adivinhar o valor padrão do React Navigation nós o fixamos:
+ * `(banca)/_layout.tsx` manda a barra ter esta altura e `TelaModulo` reserva
+ * exatamente ela no fim da rolagem. Um número só, nos dois lugares.
+ */
+export const alturaBarraDeAbas = 64;
+
 export const raio = {
   sm: 6,
   md: 10,

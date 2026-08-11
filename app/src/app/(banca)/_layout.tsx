@@ -5,11 +5,13 @@
 
 import { Redirect, Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSessao } from '@/contexts/SessaoContext';
-import { cores, fontes } from '@/theme';
+import { alturaBarraDeAbas, cores, fontes } from '@/theme';
 
 export default function LayoutBanca() {
   const { restaurando, autenticado } = useSessao();
+  const insets = useSafeAreaInsets();
 
   if (restaurando) return null;
   if (!autenticado) return <Redirect href="/entrar" />;
@@ -23,6 +25,10 @@ export default function LayoutBanca() {
         tabBarStyle: {
           backgroundColor: cores.papelCartao,
           borderTopColor: cores.linha,
+          // A altura é fixada aqui para que `TelaModulo` saiba quanto
+          // reservar no fim da rolagem.
+          height: alturaBarraDeAbas + insets.bottom,
+          paddingTop: 6,
         },
         tabBarLabelStyle: {
           fontFamily: fontes.corpoMedio,

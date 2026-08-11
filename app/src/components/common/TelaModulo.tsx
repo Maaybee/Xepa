@@ -9,7 +9,7 @@
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import type { ReactNode } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { cores, espaco, type ModuloXepa } from '@/theme';
+import { alturaBarraDeAbas, cores, espaco, type ModuloXepa } from '@/theme';
 import { Carregando, EstadoDeErro } from '@/components/ui/Estados';
 import { Texto } from '@/components/ui/Texto';
 
@@ -22,6 +22,8 @@ interface Props {
   carregando?: boolean;
   erro?: string | null;
   aoRecarregar?: (() => Promise<void> | void) | undefined;
+  /** Telas fora das abas (o perfil, que abre como modal) passam `false`. */
+  dentroDasAbas?: boolean;
 }
 
 export function TelaModulo({
@@ -32,16 +34,21 @@ export function TelaModulo({
   carregando = false,
   erro = null,
   aoRecarregar,
+  dentroDasAbas = true,
 }: Props) {
   const insets = useSafeAreaInsets();
   const acento = cores.modulo[modulo];
+  // A barra de abas fica por cima da rolagem; sem reservar a altura dela, o
+  // último item da lista some atrás.
+  const respiroInferior =
+    insets.bottom + espaco.xxl + (dentroDasAbas ? alturaBarraDeAbas : 0);
 
   return (
     <ScrollView
       style={estilos.fundo}
       contentContainerStyle={[
         estilos.conteudo,
-        { paddingTop: insets.top + espaco.lg, paddingBottom: insets.bottom + espaco.xxl },
+        { paddingTop: insets.top + espaco.lg, paddingBottom: respiroInferior },
       ]}
       keyboardShouldPersistTaps="handled"
       refreshControl={

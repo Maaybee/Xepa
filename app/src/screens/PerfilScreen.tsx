@@ -50,6 +50,7 @@ export function PerfilScreen() {
       modulo="banca"
       erro={apoio.erro}
       aoRecarregar={apoio.recarregar}
+      dentroDasAbas={false}
     >
       {acao.erro ? <Aviso mensagem={acao.erro} tom="erro" /> : null}
 
