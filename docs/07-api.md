@@ -327,6 +327,87 @@ Aceita `?mes=AAAA-MM` (padrão: mês corrente).
 
 ---
 
+## Módulo 4 — Cabeça
+
+Todas as rotas exigem sessão e são escopadas pelo usuário.
+
+O objeto `materia`:
+
+```json
+{ "id": 2, "nome": "Cálculo I", "metodoMedia": "ponderada", "media": 8.25, "totalAvaliacoes": 2, "totalMinutosEstudo": 240 }
+```
+
+`media` é `null` enquanto não houver avaliação — não zero, que seria lido como "tirou zero".
+
+### `GET /api/cabeca/materias` · `POST /api/cabeca/materias` — SD16 (RF022, RN15)
+
+Corpo: `{ "nome": string, "metodoMedia"?: "simples" | "ponderada" }` (padrão `simples`)
+
+O método escolhido define como a média daquela matéria é calculada (RN15): na ponderada cada nota pesa o que o usuário definiu; na simples todas pesam igual e o campo `peso` fica registrado mas não influencia.
+
+- `201` → `{ "materia": … }` · `400` nome em branco ou método inválido · `409` matéria já cadastrada
+
+### `PUT /api/cabeca/materias/:id`
+
+Corpo (ao menos um campo): `nome`, `metodoMedia`. Trocar o método recalcula a média na resposta.
+
+### `POST /api/cabeca/materias/:id/avaliacoes` — SD18 (RF024)
+
+Corpo: `{ "descricao": string, "valor": number, "peso"?: number, "data": "AAAA-MM-DD" }` (peso padrão `1`)
+
+- `201` → `{ "avaliacao": { …, "origem": "manual" } }`
+- `400` nota negativa, peso não positivo, data fora do formato
+- `404` matéria inexistente ou de outro usuário
+
+### `GET /api/cabeca/materias/:id/avaliacoes` · `DELETE /api/cabeca/avaliacoes/:id`
+
+Listagem em ordem cronológica; remoção devolve `204` ou `404`.
+
+### `POST /api/cabeca/materias/:id/sessoes` — SD19 (RF025)
+
+Corpo: `{ "data": "AAAA-MM-DD", "duracaoMin": number }` — inteiro positivo, no máximo 1440.
+
+- `201` → `{ "sessao": … }` · `400` duração inválida · `404` matéria não encontrada
+
+### `GET /api/cabeca/materias/:id/desempenho` — SD20 (RF026, RF027, RF028)
+
+```json
+{
+  "materia": { "id": 2, "nome": "Cálculo I", "metodoMedia": "ponderada" },
+  "media": 8.25,
+  "avaliacoes": [ … ],
+  "progressao": {
+    "pontos": [{ "data": "2026-03-10", "descricao": "P1", "valor": 6, "mediaAcumulada": 6 }],
+    "primeira": 6, "ultima": 9, "variacao": 3, "tendencia": "subindo"
+  },
+  "estudo": {
+    "totalSessoes": 3, "totalMinutos": 240, "mediaMinutosPorSessao": 80,
+    "maiorSessaoMin": 120, "ultimaSessao": "2026-04-02",
+    "porMes": [{ "mes": "2026-03", "minutos": 120, "sessoes": 2 }]
+  }
+}
+```
+
+`progressao` é a RN16: cada avaliação em ordem cronológica com a média até aquele ponto. A `tendencia` compara a média da primeira metade das avaliações com a da segunda — `subindo`, `caindo`, `estavel` (diferença menor que 0,25) ou `indefinida` (menos de duas avaliações).
+
+### `GET /api/cabeca/desempenho` — RF028
+
+Panorama de todas as matérias: lista com médias, `mediaGeral` (média das médias, só de matérias que já têm nota), estatísticas de estudo somadas e ranking de tempo por matéria.
+
+### `POST /api/cabeca/importar` — SD17 (RF023, RN05)
+
+Importa as notas da instituição vinculada. Sem corpo.
+
+- `200` → `{ "instituicao", "importadas", "ignoradas", "materiasCriadas": [], "avaliacoes": [] }`
+- `422` sem vínculo institucional ativo (RN05)
+- `503` `INTEGRACAO_INDISPONIVEL` — o vínculo está certo, mas a instituição não expõe importação
+
+> Na prática o `503` é o caso normal: a maioria das instituições não oferece integração, e o caminho principal para as notas é o registro manual (RF024). O adaptador vive em `services/instituicaoService.ts` — quando alguma instituição publicar uma API, ela entra ali sem mexer no resto do módulo. Fora de produção, `INSTITUICAO_INTEGRACAO=stub` devolve notas fixas para exercitar o fluxo.
+
+A importação roda numa transação e é idempotente: reimportar não duplica notas já trazidas (mesma matéria, descrição e data), apenas incrementa `ignoradas`. Matéria que ainda não existe é criada com método `simples`.
+
+---
+
 ## Próximos módulos
 
-Cabeça (SD16–SD20) e Roupa (SD21–SD24) ainda não foram implementados.
+Roupa (SD21–SD24) ainda não foi implementado.
