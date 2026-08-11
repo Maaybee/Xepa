@@ -110,6 +110,112 @@ Campo ausente não é alterado; `null` desfaz o vínculo.
 
 ---
 
+## Módulo 2 — Despensa
+
+Todas as rotas exigem sessão e são escopadas pelo usuário: produto de outro usuário responde `404`, nunca `403` — não dá para sondar o que existe na despensa alheia.
+
+O objeto `produto`:
+
+```json
+{
+  "id": 7,
+  "nome": "Arroz",
+  "categoria": "Grãos",
+  "unidade": "kg",
+  "quantidadeAtual": 3,
+  "monitorado": true,
+  "quantidadeMinima": 2,
+  "emAlerta": false,
+  "criadoEm": "2026-08-10T12:00:00.000Z"
+}
+```
+
+`emAlerta` é a RN08 avaliada: item monitorado cuja quantidade atingiu ou ficou abaixo da mínima.
+
+### `GET /api/despensa/produtos` — SD09 (RF011)
+
+- `200` → `{ "produtos": [ … ] }`, em ordem alfabética
+
+### `GET /api/despensa/produtos/:id` — SD09 (RF013)
+
+Detalhe com histórico de compras e últimas movimentações.
+
+- `200` → `{ "produto": { …, "historicoCompras": [ { "data", "localCompra", "descricaoNota", "quantidade", "valorUnitario", "valorTotal" } ], "movimentacoes": [ { "tipo", "quantidade", "data" } ] } }`
+- `404` produto inexistente ou de outro usuário
+
+### `POST /api/despensa/produtos` — SD07 (RF009)
+
+Corpo: `{ "nome": string, "categoria"?: string|null, "unidade"?: string, "quantidadeInicial"?: number, "monitorado"?: boolean, "quantidadeMinima"?: number|null }`
+
+`quantidadeInicial` entra como movimentação de entrada, não como valor solto — a coluna desnormalizada nasce coerente com o histórico.
+
+- `201` → `{ "produto": … }`
+- `400` nome em branco, quantidade negativa, ou `monitorado: true` sem mínima (RN08)
+- `409` já existe item com esse nome na despensa
+
+### `PUT /api/despensa/produtos/:id` — SD07 (RF009)
+
+Corpo (ao menos um campo): `nome`, `categoria`, `unidade`, `monitorado`, `quantidadeMinima`.
+
+`quantidadeAtual` **não** é editável aqui de propósito: estoque só muda por movimentação (consumo ou nota).
+
+- `200` / `400` / `404` / `409` — mesma semântica da criação
+
+### `POST /api/despensa/produtos/:id/consumo` — SD08 (RF010, RN07, RN08)
+
+Corpo: `{ "quantidade": number }` (maior que zero)
+
+- `200` → `{ "produto": …, "alertaReposicao": { "mensagem": string } | null }`
+- `404` produto inexistente ou de outro usuário
+- `422` estoque insuficiente (RN07) — zerar é permitido, ficar negativo não
+
+`alertaReposicao` vem preenchido quando a baixa fez um item monitorado atingir a mínima (RN08).
+
+### `PUT /api/despensa/produtos/:id/monitoramento` — SD10 (RF012)
+
+Corpo: `{ "monitorado": boolean, "quantidadeMinima"?: number|null }`
+
+Desligar o monitoramento limpa a mínima — ela não significa nada sozinha.
+
+- `200` → `{ "produto": … }`
+- `400` ligar o monitoramento sem informar a mínima (RN08)
+
+### `GET /api/despensa/alertas` — RF012 / RN08
+
+O que precisa de reposição agora. É também o que o alerta de lavanderia (RF033) vai consultar, já que sabão e amaciante são produtos como os demais (RN13).
+
+- `200` → `{ "produtos": [ … ] }`
+
+### `POST /api/despensa/notas` — SD06 (RF008, RF016, RN06, RN18)
+
+Corpo:
+
+```json
+{
+  "chaveAcesso": "44 dígitos",
+  "localCompra": "Mercado do Zé",
+  "dataCompra": "2026-08-01",
+  "valorTotal": 68.5,
+  "itens": [{ "descricao": "Arroz", "quantidade": 5, "valorUnitario": 6.5 }]
+}
+```
+
+Tudo acontece numa transação só: grava a nota e os itens, concilia cada item com a despensa (item desconhecido vira produto novo), registra as entradas de estoque, gera **uma** transação financeira e marca a nota como processada.
+
+`valorTotal` é opcional; sem ele, vale a soma dos itens.
+
+- `201` → `{ "notaFiscalId", "transacaoId", "gasto", "itens": [ { "descricao", "quantidade", "produto" } ], "alertasResolvidos": [ "nome do item que saiu do alerta" ] }`
+- `400` chave fora do formato, data fora de `AAAA-MM-DD`, nota sem itens
+- `409` nota já lida (RN06) — vale globalmente, não por usuário
+
+A transação nasce com `origem: "nota"` e categoria **Mercado** (RN18), e a relação nota↔transação é 1:1 — é o que impede a compra de ser contada duas vezes no gasto do mês (RN11).
+
+### `GET /api/despensa/notas`
+
+- `200` → `{ "notas": [ { "id", "chaveAcesso", "localCompra", "dataCompra", "valorTotal", "processada" } ] }`
+
+---
+
 ## Próximos módulos
 
-Despensa (SD06–SD10), Grana (SD11–SD15), Cabeça (SD16–SD20) e Roupa (SD21–SD24) ainda não foram implementados.
+Grana (SD11–SD15), Cabeça (SD16–SD20) e Roupa (SD21–SD24) ainda não foram implementados.

@@ -91,10 +91,11 @@ O cliente usa **expo-router**: as rotas ficam em `app/src/app/` e a UI das telas
 **Pronto**
 - Modelagem: requisitos (RF001–RF033, RN01–RN18, RNF01–RNF16), casos de uso (19), modelo de dados (18 entidades), 24 diagramas de sequência, arquitetura, brand kit.
 - Banco: DDL das 18 entidades com as constraints das RNs, runner de migrations e seeds (avatares, instituições).
-- API: scaffold em camadas e o **Módulo 1 — Conta/Autenticação** completo (SD01–SD05), com sessão por token, RN02, RN04, RN05 e recuperação de senha.
+- API: scaffold em camadas, **Módulo 1 — Conta/Autenticação** (SD01–SD05) e **Módulo 2 — Despensa** (SD06–SD10) completos.
+- Parte do Módulo 3 já existe como efeito da RN18: a nota fiscal gera transação na categoria "Mercado" (`notaFiscalRepository.gerarTransacao`, `categoriaRepository`).
 
 **A fazer**
-- API: Despensa (SD06–SD10), Grana (SD11–SD15), Cabeça (SD16–SD20), Roupa (SD21–SD24).
+- API: Grana (SD11–SD15), Cabeça (SD16–SD20), Roupa (SD21–SD24).
 - Suíte de testes automatizados da API (hoje a verificação é manual, contra um Postgres real).
 - Cliente: scaffold Expo + expo-router, tema a partir do brand kit, telas dos 5 módulos.
 - Personas e user stories; wireframes/UX.
