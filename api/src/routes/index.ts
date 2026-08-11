@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { pool } from '../db/pool.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { contaRoutes } from './contaRoutes.js';
+import { despensaRoutes } from './despensaRoutes.js';
 
 export const routes = Router();
 
@@ -14,6 +15,6 @@ routes.get(
 );
 
 routes.use('/conta', contaRoutes);
+routes.use('/despensa', despensaRoutes);
 
-// Despensa, Grana, Cabeça e Roupa são montados aqui conforme forem
-// implementados.
+// Grana, Cabeça e Roupa são montados aqui conforme forem implementados.
