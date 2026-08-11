@@ -91,10 +91,9 @@ O cliente usa **expo-router**: as rotas ficam em `app/src/app/` e a UI das telas
 **Pronto**
 - Modelagem: requisitos (RF001–RF033, RN01–RN18, RNF01–RNF16), casos de uso (19), modelo de dados (18 entidades), 24 diagramas de sequência, arquitetura, brand kit.
 - Banco: DDL das 18 entidades com as constraints das RNs, runner de migrations e seeds (avatares, instituições).
-- API: scaffold em camadas e os módulos **Conta/Autenticação** (SD01–SD05), **Despensa** (SD06–SD10), **Grana** (SD11–SD15) e **Cabeça** (SD16–SD20) completos.
+- API: **completa** — scaffold em camadas e os cinco módulos, cobrindo os 24 diagramas de sequência. Conta/Autenticação (SD01–SD05), Despensa (SD06–SD10), Grana (SD11–SD15), Cabeça (SD16–SD20) e Roupa (SD21–SD24).
 
 **A fazer**
-- API: Roupa (SD21–SD24).
 - Suíte de testes automatizados da API (hoje a verificação é manual, contra um Postgres real).
 - Cliente: scaffold Expo + expo-router, tema a partir do brand kit, telas dos 5 módulos.
 - Personas e user stories; wireframes/UX.

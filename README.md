@@ -28,7 +28,8 @@ docs/  → requisitos, casos de uso, ER, sequência e arquitetura
 | API — Módulo 2, Despensa | pronto |
 | API — Módulo 3, Grana | pronto |
 | API — Módulo 4, Cabeça | pronto |
-| API — Roupa | a fazer |
+| API — Módulo 5, Roupa | pronto |
+| Testes automatizados da API | a fazer |
 | App mobile | a fazer |
 
 ## Setup

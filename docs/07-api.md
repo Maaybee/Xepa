@@ -408,6 +408,83 @@ A importação roda numa transação e é idempotente: reimportar não duplica n
 
 ---
 
-## Próximos módulos
+## Módulo 5 — Roupa
 
-Roupa (SD21–SD24) ainda não foi implementado.
+Todas as rotas exigem sessão e são escopadas pelo usuário.
+
+O objeto `peca`:
+
+```json
+{ "id": 1, "nome": "Calça jeans", "tipo": "calça", "limiteUsos": 4, "usosAtuais": 3, "precisaLavar": false, "usosRestantes": 1 }
+```
+
+`precisaLavar` é a RN14 avaliada: a peça só entra na lista de lavar ao atingir o número de usos que o usuário definiu para ela.
+
+### `GET /api/roupa/pecas` · `POST /api/roupa/pecas` — SD21 (RF029, RN14)
+
+Corpo: `{ "nome": string, "tipo"?: string|null, "limiteUsos": number }` — inteiro de 1 a 365.
+
+- `201` → `{ "peca": … }` · `400` nome em branco ou limite inválido · `409` peça já cadastrada
+
+### `PUT /api/roupa/pecas/:id` · `DELETE /api/roupa/pecas/:id`
+
+Edição de `nome`, `tipo`, `limiteUsos`. Subir o limite tira a peça da lista de lavar sem perder o contador. Remoção devolve `204`.
+
+`usosAtuais` não é editável: o contador só muda por uso registrado ou por lavagem concluída.
+
+### `POST /api/roupa/pecas/:id/uso` — SD22 (RF030, RF031, RN14)
+
+Sem corpo. Registra o uso e incrementa o contador.
+
+- `200` → `{ "peca": …, "alertaLavagem": { "mensagem": string } | null }`
+- `404` peça inexistente ou de outro usuário
+
+`alertaLavagem` vem preenchido a partir do uso que atinge o limite, e continua vindo nos usos seguintes enquanto a peça não for lavada.
+
+### `GET /api/roupa/lavar` — RN14
+
+Peças que atingiram o limite, das mais atrasadas para as menos.
+
+### `POST /api/roupa/lavagens` — SD23 (RF032)
+
+Corpo: `{ "dataAgendada": ISO8601, "pecaIds"?: number[], "lembreteAtivo"?: boolean }` (lembrete ligado por padrão)
+
+- `201` → `{ "lavagem": { "id", "dataAgendada", "status", "lembreteAtivo", "pecas": [] } }`
+- `400` data inválida · `404` alguma peça não é do usuário
+
+O lembrete em si é notificação local do aparelho: o backend guarda a data e a intenção (`lembreteAtivo`), e o app agenda.
+
+### `GET /api/roupa/lavagens`
+
+Aceita `?status=agendada|concluida|cancelada`.
+
+### `POST /api/roupa/lavagens/:id/concluir`
+
+- `200` → `{ "lavagem": …, "pecasZeradas": [ "Calça jeans" ] }`
+- `409` lavagem já concluída ou cancelada · `404` inexistente
+
+Concluir **zera o contador de usos** das peças da lavagem — é o que reinicia a contagem da RN14. O histórico em `USO_PECA` é preservado; a coluna `usos_atuais` passa a valer "usos desde a última lavagem concluída".
+
+### `POST /api/roupa/lavagens/:id/cancelar`
+
+- `200` → `{ "lavagem": … }` · `409` já concluída ou cancelada
+
+### `GET /api/roupa/alertas` — SD24 (RF033, RN13)
+
+Aceita `?emDias=N` (0 a 30, padrão 2): janela para considerar uma lavagem "próxima".
+
+```json
+{
+  "lavagensProximas": [ … ],
+  "insumos": [
+    { "produtoId": 9, "nome": "Sabão em pó", "quantidadeAtual": 1, "unidade": "kg", "emFalta": true, "naoCadastrado": false },
+    { "produtoId": null, "nome": "Amaciante", "quantidadeAtual": null, "unidade": null, "emFalta": false, "naoCadastrado": true }
+  ],
+  "faltando": ["Sabão em pó"],
+  "mensagem": "Você tem lavagem marcada e está sem Sabão em pó. Reponha antes."
+}
+```
+
+Sabão e amaciante são `PRODUTO` como os demais (RN13), então o alerta é uma consulta ao estoque da despensa — o casamento é por nome e cobre a grafia com e sem acento. Um insumo conta como em falta quando acabou **ou** quando é monitorado e atingiu a mínima (RN08). Quando não existe produto correspondente, `naoCadastrado` fica `true` e o insumo não é reportado como falta — não dá para afirmar que falta o que nunca foi cadastrado.
+
+A `mensagem` muda de tom conforme exista ou não lavagem marcada na janela, e é `null` quando não falta nada.
