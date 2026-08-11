@@ -23,6 +23,21 @@ O endereço da API depende de onde o app roda:
 
 Sem Postgres instalado, suba a API com `cd ../api && npm run dev:memoria` e popule com `npm run demo:semear` — aí é só entrar com `demo@xepa.app` / `Xepa#2026`.
 
+### `Cannot connect to Expo CLI` no emulador do Android
+
+O emulador não alcança o IP de LAN da máquina de forma confiável. O caminho que funciona é o túnel do adb:
+
+```bash
+adb reverse tcp:8081 tcp:8081
+adb shell am start -a android.intent.action.VIEW -d "exp://127.0.0.1:8081" host.exp.exponent
+```
+
+**Não use `expo start --localhost` junto disso.** Nesse modo o Metro faz bind só em `::1` (loopback IPv6), enquanto `adb reverse` encaminha para `127.0.0.1` (IPv4) — o túnel chega a um lugar onde ninguém escuta, e o app mostra exatamente esse erro. O modo LAN padrão faz bind em `::`, que no Windows é dual-stack e atende os dois. Para conferir quem está escutando:
+
+```powershell
+Get-NetTCPConnection -LocalPort 8081 -State Listen | Select-Object LocalAddress
+```
+
 | Script | O que faz |
 |--------|-----------|
 | `npm start` | sobe o Metro |
