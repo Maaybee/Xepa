@@ -216,6 +216,117 @@ A transação nasce com `origem: "nota"` e categoria **Mercado** (RN18), e a rel
 
 ---
 
+## Módulo 3 — Grana
+
+Todas as rotas exigem sessão e são escopadas pelo usuário.
+
+**Período**: as rotas de consulta aceitam `?mes=AAAA-MM` (atalho para o mês inteiro) ou `?de=AAAA-MM-DD&ate=AAAA-MM-DD`. Sem nenhum dos dois, vale o mês corrente — a "sacola" do mês.
+
+### `GET /api/grana/contas` — RF019 / RN10
+
+- `200` → `{ "contas": [ { "id", "nomeBanco", "saldoInicial", "entradas", "saidas", "saldo" } ] }`
+
+`saldo` é a RN10 aplicada: saldo inicial somado às entradas e subtraído das saídas daquela conta.
+
+### `POST /api/grana/contas` — SD11 (RF014)
+
+Corpo: `{ "nomeBanco": string, "saldoInicial"?: number }` (padrão `0`)
+
+- `201` → `{ "conta": … }`
+- `400` nome em branco
+- `409` já existe conta com esse nome
+
+### `GET /api/grana/categorias` · `POST /api/grana/categorias`
+
+Categorias financeiras (entidade `CATEGORIA` — não confundir com `produto.categoria`, texto livre). A conta nasce com sete: Mercado, Moradia, Transporte, Lazer, Saúde, Educação e Outros.
+
+- `GET` `200` → `{ "categorias": [ { "id", "nome" } ] }`
+- `POST` corpo `{ "nome": string }` → `201` / `409` se já existir
+
+### `POST /api/grana/transacoes` — SD13 (RF017)
+
+Registro manual. Corpo:
+
+```json
+{ "tipo": "saida", "valor": 40, "data": "2026-08-06", "categoriaId": 4, "contaId": null, "descricao": "Cinema" }
+```
+
+`contaId` é opcional — despesa em dinheiro vivo não tem conta.
+
+- `201` → `{ "transacao": …, "alertaOrcamento": … | null, "saldoConta": … | null }`
+- `400` valor não positivo, tipo fora de `entrada`/`saida`, data fora de `AAAA-MM-DD`, categoria ou conta inválida
+
+### `POST /api/grana/transacoes/auto` — SD12 (RF015, RN09)
+
+Mesmo corpo, mas `contaId` é **obrigatório**: todo lançamento automático fica vinculado a uma conta cadastrada (RN09).
+
+- `201` → mesma forma da manual, com `origem: "automatica"`
+- `422` sem conta, ou conta inexistente/de outro usuário
+
+> **RNF13** — a leitura de notificações bancárias é restrita no iOS. Na prática este caminho só é alimentado no Android; no iOS o financeiro se apoia no registro manual.
+
+### `alertaOrcamento` — RN12
+
+Vem preenchido quando a despesa fez o gasto acumulado da categoria atingir **80%** do orçamento daquele mês:
+
+```json
+{
+  "categoria": "Lazer", "mesReferencia": "2026-08",
+  "valorLimite": 100, "gasto": 80, "percentual": 80,
+  "estourado": false,
+  "mensagem": "Você já usou 80% do orçamento de Lazer em 2026-08: R$ 80.00 de R$ 100.00."
+}
+```
+
+É `null` quando não há orçamento para a categoria no mês, quando o gasto ainda não chegou a 80%, ou quando a transação é de entrada.
+
+### `GET /api/grana/transacoes`
+
+Filtros: período, `categoriaId`, `contaId`, `tipo`, `limite` (padrão 200, máximo 500). Sem período, lista as mais recentes sem recorte de data.
+
+- `200` → `{ "transacoes": [ … ] }`, da mais recente para a mais antiga
+
+### `GET /api/grana/resumo` — SD14 (RF018, RF019, RN10, RN11)
+
+```json
+{
+  "periodo": { "de": "2026-08-01", "ate": "2026-08-31" },
+  "entradas": 2500, "saidas": 270, "resultado": 2230,
+  "gastosPorCategoria": [{ "categoria": { "id": 3, "nome": "Transporte" }, "total": 150, "percentual": 55.6 }],
+  "contas": [ … ],
+  "saldoTotal": 2850
+}
+```
+
+`saidas` é a RN11: soma das despesas do período, calculada só a partir de `TRANSACAO`. Como a nota fiscal gera exatamente uma transação, a compra não é contada duas vezes.
+
+`contas` e `saldoTotal` refletem o saldo atual, não o período.
+
+- `400` `de` posterior a `ate`
+
+### `POST /api/grana/orcamentos` — SD15 (RF020, RN17)
+
+Corpo: `{ "categoriaId": number, "mesReferencia": "AAAA-MM", "valorLimite": number }`
+
+Cada categoria tem no máximo um orçamento por mês (RN17): reenviar para a mesma categoria e mês **atualiza** o limite.
+
+- `201` orçamento novo · `200` orçamento atualizado
+- `400` categoria inválida, mês fora de `AAAA-MM`, limite não positivo
+
+### `GET /api/grana/orcamentos` — RF021
+
+Aceita `?mes=AAAA-MM` (padrão: mês corrente).
+
+- `200` → `{ "mesReferencia", "orcamentos": [ { "id", "categoria", "mesReferencia", "valorLimite", "gasto", "restante", "percentual", "emAlerta", "estourado" } ] }`
+
+`emAlerta` é a RN12 avaliada sobre o acumulado do mês.
+
+### `DELETE /api/grana/orcamentos/:id`
+
+- `204` removido · `404` inexistente ou de outro usuário
+
+---
+
 ## Próximos módulos
 
-Grana (SD11–SD15), Cabeça (SD16–SD20) e Roupa (SD21–SD24) ainda não foram implementados.
+Cabeça (SD16–SD20) e Roupa (SD21–SD24) ainda não foram implementados.

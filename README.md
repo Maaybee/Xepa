@@ -26,7 +26,8 @@ docs/  → requisitos, casos de uso, ER, sequência e arquitetura
 | Banco (DDL das 18 entidades + seeds) | pronto |
 | API — Módulo 1, Conta/Autenticação | pronto |
 | API — Módulo 2, Despensa | pronto |
-| API — Grana, Cabeça, Roupa | a fazer |
+| API — Módulo 3, Grana | pronto |
+| API — Cabeça, Roupa | a fazer |
 | App mobile | a fazer |
 
 ## Setup
