@@ -22,6 +22,9 @@ ios/
 .env.*
 !.env.example
 
+# banco em memória do `npm run dev:memoria` (PGlite grava aqui)
+.pglite/
+
 # eas
 eas.json.local
 
