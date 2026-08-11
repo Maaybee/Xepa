@@ -10,6 +10,7 @@
  * vai para o banco (RNF07).
  */
 
+import { TTL_SESSAO_MINUTOS } from './banco.js';
 import type { Cliente } from './http.js';
 
 export interface ContaDeTeste {
@@ -39,7 +40,14 @@ export async function criarConta(cliente: Cliente, nome = 'Estudante'): Promise<
   });
 
   const token = gerarToken();
-  await usuarioRepository.registrarTokenSessao(usuario.id, hashToken(token), expiraEm(30));
+  // O mesmo prazo que `resolverSessao` vai usar ao renovar — sem número mágico
+  // repetido aqui, que era o que abria espaço para a sessão morrer no meio de
+  // um cenário quando o ambiente definia um TTL menor.
+  await usuarioRepository.registrarTokenSessao(
+    usuario.id,
+    hashToken(token),
+    expiraEm(TTL_SESSAO_MINUTOS),
+  );
 
   return { id: usuario.id, email, token, cliente: cliente.comToken(token) };
 }

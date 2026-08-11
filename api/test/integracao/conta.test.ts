@@ -9,7 +9,7 @@
 
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, describe, it } from 'node:test';
-import { prepararBanco } from '../apoio/banco.js';
+import { TTL_SESSAO_MINUTOS, prepararBanco } from '../apoio/banco.js';
 import { subirApi } from '../apoio/http.js';
 
 const banco = await prepararBanco();
@@ -194,7 +194,11 @@ describe('sessão (RNF09) e logout (SD03, RN03)', () => {
     const { rows } = await banco.query<{ restante: number }>(
       "SELECT extract(epoch FROM token_sessao_expira_em - now()) AS restante FROM usuario",
     );
-    assert.ok(rows[0]!.restante > 60 * 25, 'a janela de inatividade deveria ter recomeçado');
+    // Sobrou quase a janela inteira: ela recomeçou, não continuou do 1 minuto.
+    assert.ok(
+      rows[0]!.restante > (TTL_SESSAO_MINUTOS - 5) * 60,
+      'a janela de inatividade deveria ter recomeçado',
+    );
   });
 });
 

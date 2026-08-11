@@ -17,6 +17,21 @@ process.env.NODE_ENV ??= 'test';
 process.env.DATABASE_URL ??= 'postgresql://xepa:xepa@localhost:5432/xepa_test';
 process.env.SMTP_HOST ??= '';
 
+/**
+ * Janela de inatividade da sessão (RNF09) durante os testes.
+ *
+ * É **fixada**, e não herdada do ambiente, de propósito. `resolverSessao`
+ * renova a sessão usando `env.sessionTtlMinutes`: se alguém exportasse
+ * `SESSION_TTL_MINUTES=1`, uma rodada lenta passaria a expirar sozinha no meio
+ * de um teste e devolveria 401 onde o cenário espera 200 — falha intermitente
+ * que não tem nada a ver com o código sob teste.
+ *
+ * Quem precisa testar a expiração de fato (em `integracao/conta.test.ts`)
+ * envelhece o token direto no banco, sem depender de tempo de parede.
+ */
+export const TTL_SESSAO_MINUTOS = 30;
+process.env.SESSION_TTL_MINUTES = String(TTL_SESSAO_MINUTOS);
+
 import { readFile } from 'node:fs/promises';
 import { mock } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
