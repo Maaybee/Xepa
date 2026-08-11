@@ -32,11 +32,28 @@ npm run dev               # http://localhost:3333/api
 
 Checagem rápida: `GET /api/saude` responde `{ "status": "ok", "banco": "ok" }`.
 
+### Sem Postgres instalado
+
+Para desenvolver o app sem montar um Postgres, existe um modo com o banco embutido:
+
+```bash
+npm run dev:memoria       # sobe a API sobre PGlite, grava em api/.pglite/
+npm run demo:semear       # popula uma conta de demonstração
+```
+
+`scripts/gancho-banco.mjs` é um gancho de resolução de módulos que troca `src/db/pool.ts` por uma implementação sobre [PGlite](https://pglite.dev) — o mesmo Postgres-em-WASM da suíte de testes. **Nada em `src/` sabe disso**: Controllers, Services e Repositories continuam importando `../db/pool.js`. As migrations rodam sozinhas na primeira subida e os dados sobrevivem a reinícios.
+
+Não substitui Postgres em produção — `npm run dev` continua falando com um servidor de verdade.
+
+O seed cria `demo@xepa.app` / `Xepa#2026` com os dados já nas condições que disparam os alertas: item no limite (RN08), orçamento em 92,5% (RN12), sabão zerado (RN13) e peça no limite de usos (RN14).
+
 ## Scripts
 
 | Script | O que faz |
 |--------|-----------|
-| `npm run dev` | sobe a API com recarga automática |
+| `npm run dev` | sobe a API com recarga automática (exige Postgres) |
+| `npm run dev:memoria` | sobe a API sobre PGlite, sem Postgres instalado |
+| `npm run demo:semear` | popula a conta de demonstração (com a API no ar) |
 | `npm run build` / `npm start` | compila para `dist/` e executa |
 | `npm run typecheck` | checagem de tipos sem emitir |
 | `npm run typecheck:test` | o mesmo, incluindo `test/` |

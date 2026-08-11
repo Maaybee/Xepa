@@ -13,7 +13,15 @@ cp .env.example .env      # ajuste EXPO_PUBLIC_API_URL
 npm start                 # abre o Expo; tecle `i` para o simulador do iOS
 ```
 
-Em aparelho físico, `localhost` não resolve para a máquina de desenvolvimento: use o IP na rede local (`EXPO_PUBLIC_API_URL=http://192.168.0.10:3333/api`).
+O endereço da API depende de onde o app roda:
+
+| Onde | `EXPO_PUBLIC_API_URL` |
+|------|----------------------|
+| Simulador do iOS | `http://localhost:3333/api` |
+| Emulador do Android | `http://10.0.2.2:3333/api` — no emulador, `localhost` é o próprio dispositivo |
+| Aparelho físico | `http://<IP-da-máquina>:3333/api` |
+
+Sem Postgres instalado, suba a API com `cd ../api && npm run dev:memoria` e popule com `npm run demo:semear` — aí é só entrar com `demo@xepa.app` / `Xepa#2026`.
 
 | Script | O que faz |
 |--------|-----------|

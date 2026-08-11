@@ -87,6 +87,12 @@ O cliente usa **expo-router**: as rotas ficam em `app/src/app/` e a UI das telas
 - Todo handler assíncrono de rota vai embrulhado em `asyncHandler` (o Express 4 não encaminha rejeição de Promise).
 - Toda constraint de banco criada por causa de uma regra cita a RN no comentário do DDL.
 
+## Rodar sem Postgres
+
+`cd api && npm run dev:memoria` sobe a API inteira sobre PGlite (Postgres em WASM), e `npm run demo:semear` popula a conta `demo@xepa.app` / `Xepa#2026` já nas condições que disparam RN08, RN12, RN13 e RN14. `scripts/gancho-banco.mjs` troca `src/db/pool.ts` por um gancho de resolução de módulos — nada em `src/` sabe disso.
+
+No emulador do Android, `EXPO_PUBLIC_API_URL` precisa ser `http://10.0.2.2:3333/api`; `localhost` lá é o próprio dispositivo.
+
 ## Testes da API
 
 `cd api && npm test` — roda sem banco instalado e sem `.env`.
