@@ -45,21 +45,28 @@ xepa/
 ├── CLAUDE.md
 ├── README.md
 ├── docs/                     # modelagem completa (ver seção Documentação)
-├── app/                      # React Native + Expo (cliente)
+├── app/                      # React Native + Expo (cliente) — ainda não scaffoldado
 │   └── src/
+│       ├── app/              # rotas do expo-router
 │       ├── screens/          # banca, despensa, grana, cabeca, roupa
 │       ├── components/
-│       ├── services/         # chamadas à API
-│       └── navigation/
+│       ├── services/api/     # chamadas à API
+│       ├── theme/            # brand kit
+│       ├── contexts/  hooks/  store/  types/  utils/  constants/  localization/
 └── api/                      # Node + TypeScript (backend em camadas)
     └── src/
-        ├── controllers/
-        ├── services/
-        ├── repositories/
-        ├── models/
+        ├── controllers/      # entrada HTTP + validação de formato (Zod)
+        ├── services/         # regras de negócio (as RNs)
+        ├── repositories/     # único lugar com SQL
+        ├── models/           # tipos das entidades do ER
         ├── routes/
-        └── db/               # migrations, schema (DDL)
+        ├── middlewares/      # autenticar, errorHandler, asyncHandler
+        ├── config/           # env tipado
+        ├── utils/            # errors, senha, token
+        └── db/               # pool, migrations (DDL), seeds, runners
 ```
+
+O cliente usa **expo-router**: as rotas ficam em `app/src/app/` e a UI das telas em `app/src/screens/`.
 
 ## Documentação
 - Visão geral: `docs/01-visao-geral.md`
@@ -68,8 +75,26 @@ xepa/
 - Modelo de dados (ER): `docs/04-modelo-de-dados.md`
 - Diagramas de sequência (24): `docs/05-diagramas-sequencia.md`
 - Arquitetura: `docs/06-arquitetura.md`
+- Contrato da API (rotas implementadas): `docs/07-api.md`
 - Documento consolidado: `docs/documentacao-completa.md`
 
+## Convenções da API
+
+- Controller nunca chama Repository direto; Service nunca escreve SQL.
+- Validação de **formato** fica no Controller (schemas Zod); validação de **regra de negócio** fica no Service.
+- Erros de domínio: o Service lança `AppError` (`api/src/utils/errors.ts`) e o `errorHandler` traduz para HTTP. Os Services não importam Express.
+- Todo handler assíncrono de rota vai embrulhado em `asyncHandler` (o Express 4 não encaminha rejeição de Promise).
+- Toda constraint de banco criada por causa de uma regra cita a RN no comentário do DDL.
+
 ## Estado atual e próximos passos
-- **Pronto**: requisitos (RF001–RF033, RN01–RN18, RNF01–RNF16), casos de uso (19), modelo de dados (18 entidades), 24 diagramas de sequência, arquitetura, brand kit.
-- **A fazer**: personas e user stories; wireframes/UX; DDL do banco (`CREATE TABLE` + constraints: e-mail único, chave de acesso única, índice único de orçamento por categoria/mês); implementação por módulo; testes.
+
+**Pronto**
+- Modelagem: requisitos (RF001–RF033, RN01–RN18, RNF01–RNF16), casos de uso (19), modelo de dados (18 entidades), 24 diagramas de sequência, arquitetura, brand kit.
+- Banco: DDL das 18 entidades com as constraints das RNs, runner de migrations e seeds (avatares, instituições).
+- API: scaffold em camadas e o **Módulo 1 — Conta/Autenticação** completo (SD01–SD05), com sessão por token, RN02, RN04, RN05 e recuperação de senha.
+
+**A fazer**
+- API: Despensa (SD06–SD10), Grana (SD11–SD15), Cabeça (SD16–SD20), Roupa (SD21–SD24).
+- Suíte de testes automatizados da API (hoje a verificação é manual, contra um Postgres real).
+- Cliente: scaffold Expo + expo-router, tema a partir do brand kit, telas dos 5 módulos.
+- Personas e user stories; wireframes/UX.

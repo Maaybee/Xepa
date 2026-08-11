@@ -13,11 +13,31 @@ Toda a modelagem está em [`docs/`](./docs). Comece pela [documentação consoli
 ## Estrutura
 
 ```
-app/   → aplicativo mobile (cliente)
-api/   → backend em camadas (Controller → Service → Repository)
+app/   → aplicativo mobile (cliente) — ver app/README.md
+api/   → backend em camadas (Controller → Service → Repository) — ver api/README.md
 docs/  → requisitos, casos de uso, ER, sequência e arquitetura
 ```
 
+## Estado
+
+| Parte | Situação |
+|-------|----------|
+| Modelagem completa | pronta |
+| Banco (DDL das 18 entidades + seeds) | pronto |
+| API — Módulo 1, Conta/Autenticação | pronto |
+| API — Despensa, Grana, Cabeça, Roupa | a fazer |
+| App mobile | a fazer |
+
 ## Setup
 
-_A definir (scripts de instalação e execução do app e da API)._
+Pré-requisito: Node 20+ e PostgreSQL 14+.
+
+```bash
+cd api
+npm install
+cp .env.example .env      # ajuste DATABASE_URL
+npm run db:reset          # cria o schema e popula os dados de apoio
+npm run dev               # http://localhost:3333/api
+```
+
+Detalhes de scripts e camadas em [`api/README.md`](./api/README.md).
