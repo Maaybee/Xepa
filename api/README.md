@@ -39,6 +39,28 @@ Checagem rápida: `GET /api/saude` responde `{ "status": "ok", "banco": "ok" }`.
 | `npm run dev` | sobe a API com recarga automática |
 | `npm run build` / `npm start` | compila para `dist/` e executa |
 | `npm run typecheck` | checagem de tipos sem emitir |
+| `npm run typecheck:test` | o mesmo, incluindo `test/` |
+| `npm test` | suíte completa (unidade + integração) |
+| `npm run test:unidade` / `npm run test:integracao` | roda só uma das partes |
 | `npm run db:migrate` | aplica as migrations pendentes (`--reset` derruba e recria o schema) |
 | `npm run db:seed` | popula avatares, instituições e categorias padrão |
 | `npm run db:reset` | `db:migrate --reset` seguido de `db:seed` |
+
+## Testes
+
+`npm test` — **não precisa de banco nenhum instalado**, nem de `.env`.
+
+| Pasta | O que cobre |
+|-------|-------------|
+| `test/unidade/` | funções puras: força da senha (RN02), tokens (RNF07), médias e progressão (RN15, RN16), alerta de estoque (RN08), orçamento (RN12), limite de usos (RN14) |
+| `test/integracao/` | um arquivo por módulo, atravessando rota → middleware → controller → service → repository → banco |
+| `test/apoio/` | banco de teste, cliente HTTP e a conta pronta usada pelos cenários |
+
+Os testes de integração sobem o app Express de verdade numa porta efêmera e conversam com ele por `fetch`. O banco é um [PGlite](https://pglite.dev) — o próprio Postgres compilado para WASM, em memória — colocado no lugar de `src/db/pool.ts` por `test/apoio/banco.ts`. O DDL de `src/db/migrations/` roda inteiro, então as constraints que materializam as RNs valem no teste como valem em produção.
+
+Como escrever mais:
+
+- O nome do teste cita a RN ou o RF que ele defende — é o que liga a suíte a `docs/02-requisitos.md`.
+- `test/apoio/banco.js` precisa ser importado **antes** de qualquer módulo de `src/`; por isso os arquivos de integração chamam `await prepararBanco()` no topo e o app entra por importação dinâmica.
+- Cada cenário começa com o banco limpo (`banco.limpar()` no `beforeEach`); avatares e instituições, que são dados de apoio, permanecem.
+- `criarConta()` cria usuário e sessão direto pelo Repository, pulando o bcrypt de 12 rounds. O cadastro e o login reais são exercitados em `test/integracao/conta.test.ts`.

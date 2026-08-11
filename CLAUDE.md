@@ -63,7 +63,8 @@ xepa/
         ├── middlewares/      # autenticar, errorHandler, asyncHandler
         ├── config/           # env tipado
         ├── utils/            # errors, senha, token
-        └── db/               # pool, migrations (DDL), seeds, runners
+        ├── db/               # pool, migrations (DDL), seeds, runners
+        └── ../test/          # unidade/, integracao/, apoio/
 ```
 
 O cliente usa **expo-router**: as rotas ficam em `app/src/app/` e a UI das telas em `app/src/screens/`.
@@ -86,14 +87,24 @@ O cliente usa **expo-router**: as rotas ficam em `app/src/app/` e a UI das telas
 - Todo handler assíncrono de rota vai embrulhado em `asyncHandler` (o Express 4 não encaminha rejeição de Promise).
 - Toda constraint de banco criada por causa de uma regra cita a RN no comentário do DDL.
 
+## Testes da API
+
+`cd api && npm test` — roda sem banco instalado e sem `.env`.
+
+- Runner: `node --test` (nativo) + `tsx`. Sem framework externo.
+- `test/integracao/` sobe o app Express numa porta efêmera e usa `fetch`; o banco é um **PGlite** (Postgres em WASM, em memória) que `test/apoio/banco.ts` põe no lugar de `src/db/pool.ts` via `mock.module`. O DDL das migrations roda inteiro, então as constraints das RNs valem no teste.
+- `test/unidade/` cobre as funções puras (senha, tokens, médias, alertas) sem tocar no banco.
+- O nome de cada teste cita a RN ou o RF que ele defende.
+- `test/apoio/banco.js` tem que ser importado antes de qualquer módulo de `src/`; por isso o app entra por importação dinâmica.
+
 ## Estado atual e próximos passos
 
 **Pronto**
 - Modelagem: requisitos (RF001–RF033, RN01–RN18, RNF01–RNF16), casos de uso (19), modelo de dados (18 entidades), 24 diagramas de sequência, arquitetura, brand kit.
 - Banco: DDL das 18 entidades com as constraints das RNs, runner de migrations e seeds (avatares, instituições).
 - API: **completa** — scaffold em camadas e os cinco módulos, cobrindo os 24 diagramas de sequência. Conta/Autenticação (SD01–SD05), Despensa (SD06–SD10), Grana (SD11–SD15), Cabeça (SD16–SD20) e Roupa (SD21–SD24).
+- Testes da API: 210 testes (unidade + integração ponta a ponta dos 5 módulos), rodando sem banco externo.
 
 **A fazer**
-- Suíte de testes automatizados da API (hoje a verificação é manual, contra um Postgres real).
 - Cliente: scaffold Expo + expo-router, tema a partir do brand kit, telas dos 5 módulos.
 - Personas e user stories; wireframes/UX.

@@ -29,7 +29,7 @@ docs/  → requisitos, casos de uso, ER, sequência e arquitetura
 | API — Módulo 3, Grana | pronto |
 | API — Módulo 4, Cabeça | pronto |
 | API — Módulo 5, Roupa | pronto |
-| Testes automatizados da API | a fazer |
+| Testes automatizados da API | pronto (210 testes, `cd api && npm test`) |
 | App mobile | a fazer |
 
 ## Setup
