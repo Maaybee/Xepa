@@ -5,6 +5,7 @@ import { contaRoutes } from './contaRoutes.js';
 import { despensaRoutes } from './despensaRoutes.js';
 import { granaRoutes } from './granaRoutes.js';
 import { cabecaRoutes } from './cabecaRoutes.js';
+import { roupaRoutes } from './roupaRoutes.js';
 
 export const routes = Router();
 
@@ -20,5 +21,4 @@ routes.use('/conta', contaRoutes);
 routes.use('/despensa', despensaRoutes);
 routes.use('/grana', granaRoutes);
 routes.use('/cabeca', cabecaRoutes);
-
-// Roupa é montado aqui quando for implementado.
+routes.use('/roupa', roupaRoutes);
