@@ -2,6 +2,7 @@
   "name": "xepa-api",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "API REST em camadas do Xepa (Controller -> Service -> Repository -> PostgreSQL)",
   "main": "dist/server.js",
   "engines": {
