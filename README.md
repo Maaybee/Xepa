@@ -30,7 +30,8 @@ docs/  → requisitos, casos de uso, ER, sequência e arquitetura
 | API — Módulo 4, Cabeça | pronto |
 | API — Módulo 5, Roupa | pronto |
 | Testes automatizados da API | pronto (210 testes, `cd api && npm test`) |
-| App mobile | a fazer |
+| App — scaffold, tema, sessão e as 5 telas de módulo | pronto |
+| App — QR Code da nota, notificações locais, testes | a fazer |
 
 ## Setup
 
@@ -44,4 +45,13 @@ npm run db:reset          # cria o schema e popula os dados de apoio
 npm run dev               # http://localhost:3333/api
 ```
 
-Detalhes de scripts e camadas em [`api/README.md`](./api/README.md).
+Com a API no ar, o app:
+
+```bash
+cd app
+npm install
+cp .env.example .env      # ajuste EXPO_PUBLIC_API_URL
+npm start                 # tecle `i` para o simulador do iOS
+```
+
+Detalhes de scripts e camadas em [`api/README.md`](./api/README.md) e [`app/README.md`](./app/README.md).

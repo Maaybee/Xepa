@@ -104,7 +104,8 @@ O cliente usa **expo-router**: as rotas ficam em `app/src/app/` e a UI das telas
 - Banco: DDL das 18 entidades com as constraints das RNs, runner de migrations e seeds (avatares, instituições).
 - API: **completa** — scaffold em camadas e os cinco módulos, cobrindo os 24 diagramas de sequência. Conta/Autenticação (SD01–SD05), Despensa (SD06–SD10), Grana (SD11–SD15), Cabeça (SD16–SD20) e Roupa (SD21–SD24).
 - Testes da API: 210 testes (unidade + integração ponta a ponta dos 5 módulos), rodando sem banco externo.
+- Cliente: scaffold Expo SDK 57 + expo-router, tema do brand kit, camada de API, sessão em SecureStore, telas de autenticação e as cinco telas de módulo consumindo a API.
 
 **A fazer**
-- Cliente: scaffold Expo + expo-router, tema a partir do brand kit, telas dos 5 módulos.
+- Cliente: leitor de QR Code da nota (RF008), notificações locais de lembrete (RF032), tela de detalhe por item/matéria, testes do app.
 - Personas e user stories; wireframes/UX.
