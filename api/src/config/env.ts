@@ -22,6 +22,8 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: num('PORT', 3333),
   databaseUrl: required('DATABASE_URL'),
+  /** Conexões simultâneas no pool. */
+  dbPoolMax: num('DB_POOL_MAX', 10),
 
   /** RNF09 — a sessão expira após 30 minutos de inatividade. */
   sessionTtlMinutes: num('SESSION_TTL_MINUTES', 30),

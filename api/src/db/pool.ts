@@ -14,7 +14,7 @@ pg.types.setTypeParser(pg.types.builtins.INT8, (value) => Number(value));
 
 export const pool = new pg.Pool({
   connectionString: env.databaseUrl,
-  max: 10,
+  max: env.dbPoolMax,
   idleTimeoutMillis: 30_000,
   ...(isProduction ? { ssl: { rejectUnauthorized: false } } : {}),
 });
@@ -24,6 +24,20 @@ pool.on('error', (error) => {
 });
 
 export type QueryParam = unknown;
+
+/**
+ * Quem executa uma query: o pool (cada chamada em sua própria conexão) ou um
+ * cliente de transação. Os Repositories recebem isso como parâmetro opcional,
+ * então a mesma função serve para uso solto e dentro de uma transação — é o
+ * que permite ao SD06 gravar nota, itens, movimentações e transação de forma
+ * indivisível sem duplicar SQL.
+ */
+export interface Executor {
+  query<T extends pg.QueryResultRow = pg.QueryResultRow>(
+    text: string,
+    params?: unknown[],
+  ): Promise<pg.QueryResult<T>>;
+}
 
 /** Executa uma query no pool. Usado pelos Repositories. */
 export async function query<T extends pg.QueryResultRow = pg.QueryResultRow>(
