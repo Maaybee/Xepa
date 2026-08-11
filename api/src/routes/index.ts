@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { pool } from '../db/pool.js';
 import { asyncHandler } from '../middlewares/asyncHandler.js';
+import { contaRoutes } from './contaRoutes.js';
 
 export const routes = Router();
 
@@ -12,5 +13,7 @@ routes.get(
   }),
 );
 
-// Os módulos (Conta, Despensa, Grana, Cabeça, Roupa) são montados aqui
-// conforme forem implementados.
+routes.use('/conta', contaRoutes);
+
+// Despensa, Grana, Cabeça e Roupa são montados aqui conforme forem
+// implementados.
