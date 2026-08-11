@@ -4,6 +4,7 @@ import { asyncHandler } from '../middlewares/asyncHandler.js';
 import { contaRoutes } from './contaRoutes.js';
 import { despensaRoutes } from './despensaRoutes.js';
 import { granaRoutes } from './granaRoutes.js';
+import { cabecaRoutes } from './cabecaRoutes.js';
 
 export const routes = Router();
 
@@ -18,5 +19,6 @@ routes.get(
 routes.use('/conta', contaRoutes);
 routes.use('/despensa', despensaRoutes);
 routes.use('/grana', granaRoutes);
+routes.use('/cabeca', cabecaRoutes);
 
-// Cabeça e Roupa são montados aqui conforme forem implementados.
+// Roupa é montado aqui quando for implementado.

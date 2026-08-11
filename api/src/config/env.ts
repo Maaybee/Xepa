@@ -31,6 +31,12 @@ export const env = {
   /** RF005 — validade do token de redefinição de senha. */
   resetTokenTtlMinutes: num('RESET_TOKEN_TTL_MINUTES', 30),
 
+  /**
+   * Integração de notas com a instituição (RF023). Vazio = indisponível, que
+   * é o normal; "stub" liga um conjunto fixo de notas fora de produção.
+   */
+  instituicaoIntegracao: process.env.INSTITUICAO_INTEGRACAO ?? '',
+
   mail: {
     host: process.env.SMTP_HOST ?? '',
     port: num('SMTP_PORT', 587),
