@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { closePool, pool } from './pool.js';
+import { env } from '../config/env.js';
 
 const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), 'migrations');
 
@@ -12,8 +13,35 @@ const migrationsDir = join(dirname(fileURLToPath(import.meta.url)), 'migrations'
  *
  * `--reset` derruba o schema `public` inteiro antes — só para desenvolvimento.
  */
+/**
+ * Bancos onde `--reset` é seguro: os que rodam na própria máquina.
+ *
+ * `DROP SCHEMA public CASCADE` não apaga só as tabelas do Xepa. Num Postgres
+ * gerenciado ele leva junto o que o provedor mantém no schema — no Supabase,
+ * os grants de `anon`, `authenticated` e `service_role`, que não voltam com o
+ * `CREATE SCHEMA` seguinte e deixam o projeto quebrado.
+ *
+ * Um banco remoto costuma ser o de outra pessoa também, então o reset exige
+ * dizer o nome do host de novo, em `DB_RESET_CONFIRMA_HOST`. É chato de
+ * propósito: o comando está a um `npm run db:reset` de distância.
+ */
+function exigirResetSeguro(): void {
+  const host = new URL(env.databaseUrl).hostname;
+  const local = ['localhost', '127.0.0.1', '::1', '0.0.0.0'].includes(host);
+  if (local || process.env.DB_RESET_CONFIRMA_HOST === host) return;
+
+  throw new Error(
+    `Recusando --reset em um banco remoto (${host}).\n\n` +
+      'DROP SCHEMA public CASCADE apaga mais do que as tabelas do Xepa: em ' +
+      'Postgres gerenciado ele derruba também os grants do provedor. No ' +
+      'Supabase isso quebra o projeto.\n\n' +
+      `Se for mesmo isso que você quer:\n  DB_RESET_CONFIRMA_HOST=${host} npm run db:reset`,
+  );
+}
+
 export async function migrate({ reset = false } = {}): Promise<void> {
   if (reset) {
+    exigirResetSeguro();
     console.log('[db] --reset: derrubando o schema public');
     await pool.query('DROP SCHEMA public CASCADE; CREATE SCHEMA public;');
   }
