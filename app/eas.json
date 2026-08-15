@@ -20,13 +20,13 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "http://10.254.18.142:3333/api"
+        "EXPO_PUBLIC_API_URL": "https://xepa.onrender.com/api"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://TROQUE-PELA-URL-PUBLICA-DA-API/api"
+        "EXPO_PUBLIC_API_URL": "https://xepa.onrender.com/api"
       }
     }
   },

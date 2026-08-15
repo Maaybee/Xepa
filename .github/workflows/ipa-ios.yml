@@ -23,7 +23,7 @@ on:
           pelo iPhone — o IP da máquina na rede local (http://192.168.x.x:3333/api)
           ou a URL pública, se a API já estiver publicada.
         required: true
-        default: http://10.254.18.142:3333/api
+        default: https://xepa.onrender.com/api
 
 jobs:
   build:

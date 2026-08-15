@@ -95,6 +95,14 @@ O cliente usa **expo-router**: as rotas ficam em `app/src/app/` e a UI das telas
 
 No emulador do Android, `EXPO_PUBLIC_API_URL` precisa ser `http://10.0.2.2:3333/api`; `localhost` lá é o próprio dispositivo.
 
+## Ambientes
+
+A API está publicada em **https://xepa.onrender.com/api** (Render, plano free) contra o Supabase. É para onde o `app/.env` aponta, e por isso o app funciona em qualquer rede.
+
+O plano free hiberna após ~15 min sem uso: a primeira chamada depois disso demora quase um minuto e, no app, parece travamento.
+
+Para desenvolver contra a API local, troque `EXPO_PUBLIC_API_URL` e **reinicie o Metro** — o valor é embutido no bundle, não lido em execução.
+
 ## Conectar num Postgres de verdade
 
 `cp api/.env.example api/.env`, preencher `DATABASE_URL`, depois `npm run db:migrate && npm run db:seed`. O banco precisa existir antes — as migrations criam tabela, não database.
