@@ -32,7 +32,7 @@ process.env.SMTP_HOST ??= '';
 export const TTL_SESSAO_MINUTOS = 30;
 process.env.SESSION_TTL_MINUTES = String(TTL_SESSAO_MINUTOS);
 
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { mock } from 'node:test';
 import { PGlite } from '@electric-sql/pglite';
 
@@ -88,7 +88,12 @@ export function prepararBanco(): Promise<BancoDeTeste> {
 async function iniciar(): Promise<BancoDeTeste> {
   const db = new PGlite({ parsers });
 
-  await db.exec(await ler('db/migrations/001_schema_inicial.sql'));
+  // Todas as migrations, em ordem — igual ao runner de `db/migrate.ts`. Fixar
+  // um arquivo aqui faria a suíte rodar contra um schema mais velho que o do
+  // sistema, e a migration nova só falharia em produção.
+  for (const arquivo of await listarMigrations()) {
+    await db.exec(await ler(`db/migrations/${arquivo}`));
+  }
   await db.exec(await ler('db/seeds/001_dados_de_apoio.sql'));
 
   const query = async (sql: string, params: unknown[] = []) =>
@@ -123,6 +128,11 @@ async function iniciar(): Promise<BancoDeTeste> {
 
 async function ler(caminho: string): Promise<string> {
   return readFile(new URL(caminho, raizSrc), 'utf8');
+}
+
+async function listarMigrations(): Promise<string[]> {
+  const arquivos = await readdir(new URL('db/migrations/', raizSrc));
+  return arquivos.filter((nome) => nome.endsWith('.sql')).sort();
 }
 
 function naoUsado(): never {
