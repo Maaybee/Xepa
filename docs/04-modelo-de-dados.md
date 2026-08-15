@@ -79,8 +79,22 @@ MOVIMENTACAO_ESTOQUE {
 CONTA_BANCARIA {
   id int [pk]
   usuario_id int [fk]
+  consentimento_id int [fk, note: "nulo quando a conta foi cadastrada à mão (RF014)"]
   nome_banco string
   saldo_inicial decimal
+  tipo string [note: "corrente / poupanca / pagamento"]
+  id_externo string [note: "id da conta na instituição; único por consentimento"]
+}
+
+CONSENTIMENTO [color: Blue] {
+  id int [pk]
+  usuario_id int [fk]
+  instituicao_financeira string
+  escopo string [note: "o que foi consentido: contas, extrato"]
+  status string [note: "pendente / ativo / expirado / revogado"]
+  criado_em datetime
+  expira_em datetime [note: "RN21 — teto de 12 meses"]
+  revogado_em datetime [note: "nulo enquanto não revogado"]
 }
 
 CATEGORIA {
@@ -97,8 +111,10 @@ TRANSACAO [color: Red] {
   tipo string [note: "entrada / saida"]
   valor decimal
   data date
-  origem string [note: "automatica / manual / nota"]
+  origem string [note: "manual / nota / open_finance"]
   descricao string
+  id_externo string [note: "id da movimentação na instituição; RN19 — único por conta, é o que torna a sincronização idempotente"]
+  conciliada_em datetime [note: "RN20 — quando a nota casou com a movimentação do extrato; nulo enquanto não conciliada"]
 }
 
 ORCAMENTO {
@@ -178,6 +194,8 @@ NOTA_FISCAL.id > ITEM_NOTA.nota_fiscal_id
 PRODUTO.id > ITEM_NOTA.produto_id
 PRODUTO.id > MOVIMENTACAO_ESTOQUE.produto_id
 CONTA_BANCARIA.id > TRANSACAO.conta_id
+USUARIO.id > CONSENTIMENTO.usuario_id
+CONSENTIMENTO.id > CONTA_BANCARIA.consentimento_id
 CATEGORIA.id > TRANSACAO.categoria_id
 CATEGORIA.id > ORCAMENTO.categoria_id
 NOTA_FISCAL.id - TRANSACAO.nota_fiscal_id

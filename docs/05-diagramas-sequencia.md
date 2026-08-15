@@ -160,7 +160,15 @@ else [label: válido] {
 // SD06 — Leitura de nota fiscal via QR Code
 autoNumber on
 
-Cliente > Cliente: ler QR Code da nota (mercado)
+// O QR da NFC-e carrega uma URL do portal da SEFAZ com a chave de acesso e
+// parâmetros de validação — e **nada além disso**. Descrição, quantidade e
+// valor dos produtos não estão no código: só na página do portal.
+Cliente > Cliente: ler QR Code e extrair a chave de acesso (44 dígitos)
+// Por isso os itens são conferidos pelo usuário antes de enviar. Puxá-los
+// sozinho exigiria raspar o portal da SEFAZ, que é por estado — fica fora
+// deste fluxo.
+Cliente > Usuario [label: "Usuário"]: conferir/informar os itens da nota
+Usuario --> Cliente: itens
 Cliente > Controller: POST /notas (chave_acesso, itens)
 Controller > Service: processarNota(usuario_id, chave_acesso, itens)
 Service > Repository: buscarPorChave(chave_acesso)
@@ -559,4 +567,94 @@ Repository --> Service: quantidades
 opt [label: sabão ou amaciante em falta (RN13)] {
   Service --> Cliente: alerta de reposição (lavanderia)
 }
+```
+
+### SD25 — Conectar instituição via Open Finance (RF034, RN21, RNF18)
+
+```sequence-diagram
+// SD25 — Conectar instituição via Open Finance
+autoNumber on
+
+Cliente > Controller: POST /grana/open-finance/consentimentos (instituicao, escopo)
+Controller > Service: criarConsentimento(usuario_id, dados)
+// RNF18 — o Xepa não fala com o banco: fala com o provedor autorizado
+Service > Provedor [label: "Provedor Open Finance"]: iniciarConsentimento(instituicao, escopo)
+Provedor --> Service: consentimento_externo + url de autorização
+Service > Repository: inserirConsentimento(status "pendente", expira_em)
+Repository > DB [label: "Banco de Dados"]: INSERT consentimento
+DB --> Repository: id
+Repository --> Service: consentimento
+Service --> Controller: consentimento + url
+Controller --> Cliente: 201 Created (url de autorização)
+
+// o usuário autoriza no ambiente da instituição, fora do Xepa
+Cliente > Controller: POST /grana/open-finance/consentimentos/:id/autorizar
+Controller > Service: autorizarConsentimento(usuario_id, id)
+Service > Provedor: confirmarAutorizacao(consentimento_externo)
+Provedor --> Service: autorizado + contas
+Service > Repository: atualizarStatus("ativo") + inserirContas
+Repository > DB: UPDATE consentimento; INSERT conta_bancaria (id_externo)
+DB --> Repository: ok
+Service --> Controller: contas conectadas
+Controller --> Cliente: 200 OK
+```
+
+### SD26 — Sincronizar extrato com deduplicação (RF035, RN19, RN20)
+
+```sequence-diagram
+// SD26 — Sincronizar extrato com deduplicação
+autoNumber on
+
+Cliente > Controller: POST /grana/open-finance/consentimentos/:id/sincronizar
+Controller > Service: sincronizar(usuario_id, consentimento_id)
+Service > Repository: buscarConsentimento
+Repository > DB [label: "Banco de Dados"]: SELECT consentimento
+DB --> Repository: consentimento
+Repository --> Service: consentimento
+alt [label: "expirado ou revogado (RN21)"] {
+  Service --> Controller: AppError 409
+  Controller --> Cliente: 409 Conflict
+}
+else [label: ativo] {
+  Service > Provedor [label: "Provedor Open Finance"]: listarMovimentacoes(contas, desde)
+  Provedor --> Service: movimentações
+  loop [label: "cada movimentação"] {
+    Service > Repository: buscarPorIdExterno(conta_id, id_externo)
+    Repository > DB: SELECT transacao WHERE id_externo
+    DB --> Repository: existente?
+    alt [label: "já importada (RN19)"] {
+      Service > Service: ignora — sincronização é idempotente
+    }
+    else [label: "saída casa com nota não conciliada (RN20)"] {
+      // mesmo valor, mesma conta, data dentro de 3 dias
+      Service > Repository: conciliarComNota(transacao_id, id_externo)
+      Repository > DB: UPDATE transacao SET id_externo, conciliada_em
+    }
+    else [label: "movimentação nova"] {
+      Service > Repository: inserirTransacao(origem "open_finance")
+      Repository > DB: INSERT transacao
+    }
+  }
+  Service --> Controller: resumo (importadas, conciliadas, ignoradas)
+  Controller --> Cliente: 200 OK
+}
+```
+
+### SD27 — Revogar consentimento (RF036, RN21)
+
+```sequence-diagram
+// SD27 — Revogar consentimento
+autoNumber on
+
+Cliente > Controller: DELETE /grana/open-finance/consentimentos/:id
+Controller > Service: revogarConsentimento(usuario_id, id)
+Service > Provedor [label: "Provedor Open Finance"]: revogar(consentimento_externo)
+Provedor --> Service: revogado
+Service > Repository: atualizarStatus("revogado", revogado_em)
+Repository > DB [label: "Banco de Dados"]: UPDATE consentimento
+// RN21 — as transações já importadas ficam: são histórico do usuário
+DB --> Repository: ok
+Repository --> Service: ok
+Service --> Controller: sucesso
+Controller --> Cliente: 204 No Content
 ```

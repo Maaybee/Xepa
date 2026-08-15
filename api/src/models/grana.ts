@@ -1,7 +1,7 @@
 /** Entidades do Módulo 3 — Grana (financeiro). */
 
 export type TipoTransacao = 'entrada' | 'saida';
-export type OrigemTransacao = 'automatica' | 'manual' | 'nota';
+export type OrigemTransacao = 'automatica' | 'manual' | 'nota' | 'open_finance';
 
 export interface ContaBancaria {
   id: number;

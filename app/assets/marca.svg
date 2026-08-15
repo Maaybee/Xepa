@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tinta" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7B5BC7"/>
+      <stop offset="1" stop-color="#6C8BE0"/>
+    </linearGradient>
+  </defs>
+  
+    <mask id="vazado">
+      <rect width="1024" height="1024" fill="#000"/>
+      <path d="M 356 377.6 L 668 377.6 Q 723.2 377.6 744.8000000000001 627.2 L 766.4 821.5999999999999 Q 766.4 876.8 711.1999999999999 876.8 L 312.8 876.8 Q 257.6 876.8 257.6 821.5999999999999 L 279.20000000000005 627.2 Q 300.8 377.6 356 377.6 Z" fill="#fff"/>
+      <line x1="418.4" y1="563.552" x2="605.6" y2="750.7520000000001" stroke="#000" stroke-width="72" stroke-linecap="round" />
+      <line x1="418.4" y1="750.7520000000001" x2="605.6" y2="563.552" stroke="#000" stroke-width="72" stroke-linecap="round" />
+    </mask>
+    <g transform="translate(0 -36.4)">
+      <path d="M 356 377.6 L 668 377.6 Q 723.2 377.6 744.8000000000001 627.2 L 766.4 821.5999999999999 Q 766.4 876.8 711.1999999999999 876.8 L 312.8 876.8 Q 257.6 876.8 257.6 821.5999999999999 L 279.20000000000005 627.2 Q 300.8 377.6 356 377.6 Z" fill="url(#tinta)" mask="url(#vazado)"/>
+      <path d="M 387.2 382.40000000000003 A 124.8 134.784 0 0 1 636.8 382.40000000000003" fill="none" stroke="url(#tinta)" stroke-width="55.199999999999996" stroke-linecap="round"/>
+    </g>
+</svg>
