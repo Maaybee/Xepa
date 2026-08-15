@@ -36,18 +36,32 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # O Xcode padrão da imagem trazia Swift tools 6.1, e um pacote do Expo
-      # SDK 57 exige 6.2 — o build morria em "Could not resolve package
-      # dependencies". Escolhe o mais novo instalado em vez de fixar versão,
-      # que envelheceria a cada troca de imagem.
-      - name: Selecionar o Xcode mais novo
+      # O Xcode desta imagem precisa de mira fina, porque as duas pontas erram:
+      #
+      # - o padrão traz Swift tools 6.1, e um pacote do Expo SDK 57 exige 6.2:
+      #   o build morre em "Could not resolve package dependencies";
+      # - o mais novo (26.3, Swift 6.2.4) é mais recente que o próprio Expo, e
+      #   o build morre compilando `expo-modules-jsi`, com "type of expression
+      #   is ambiguous" dentro do código deles.
+      #
+      # 26.0 é a que o SDK 57 mira. Se um dia sumir da imagem, cai para a 26.x
+      # mais velha que existir.
+      - name: Selecionar o Xcode
+        env:
+          XCODE_ALVO: '26.0'
         run: |
           set -euo pipefail
           echo "Xcodes disponíveis:"
           ls -d /Applications/Xcode*.app
-          novo=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
-          echo "escolhido: $novo"
-          sudo xcode-select -s "$novo"
+
+          escolhido=$(ls -d "/Applications/Xcode_${XCODE_ALVO}"*.app 2>/dev/null | sort -V | head -1 || true)
+          if [ -z "$escolhido" ]; then
+            echo "Xcode ${XCODE_ALVO} não existe nesta imagem; usando a 26.x mais velha"
+            escolhido=$(ls -d /Applications/Xcode_26*.app | sort -V | head -1)
+          fi
+
+          echo "escolhido: $escolhido"
+          sudo xcode-select -s "$escolhido"
           xcodebuild -version
           swift --version
 
