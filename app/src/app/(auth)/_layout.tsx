@@ -14,7 +14,7 @@ export default function LayoutAutenticacao() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: cores.papel },
+        contentStyle: { backgroundColor: cores.fundo },
       }}
     />
   );

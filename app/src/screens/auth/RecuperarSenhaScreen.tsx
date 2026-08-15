@@ -76,7 +76,7 @@ export function RecuperarSenhaScreen() {
 
       <View style={estilos.rodape}>
         <Link href="/entrar" asChild>
-          <Texto variante="corpoForte" cor={cores.olive}>
+          <Texto variante="corpoForte" cor={cores.lilas}>
             Voltar para o login
           </Texto>
         </Link>

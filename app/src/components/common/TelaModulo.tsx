@@ -1,21 +1,21 @@
 /**
  * Moldura das telas de módulo.
  *
- * Concentra o que se repete nas cinco: cabeçalho com o nome do módulo em
- * Anton, a chamada no marcador, puxar-para-atualizar e os estados de
+ * Concentra o que se repete nas cinco: cabeçalho com o nome do módulo, a
+ * chamada no acento do módulo, puxar-para-atualizar e os estados de
  * carregando/erro. As telas cuidam só do conteúdo.
  */
 
 import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import type { ReactNode } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { alturaBarraDeAbas, cores, espaco, type ModuloXepa } from '@/theme';
+import { alturaBarraDeAbas, cores, espaco, medida, type ModuloXepa } from '@/theme';
 import { Carregando, EstadoDeErro } from '@/components/ui/Estados';
 import { Texto } from '@/components/ui/Texto';
 
 interface Props {
   titulo: string;
-  /** A frase no marcador, na voz de feira do produto. */
+  /** A frase de apoio sob o título, na voz do produto. */
   chamada?: string | undefined;
   modulo: ModuloXepa;
   children: ReactNode;
@@ -62,12 +62,9 @@ export function TelaModulo({
       }
     >
       <View style={estilos.cabecalho}>
-        <View style={[estilos.risco, { backgroundColor: acento }]} />
-        <Texto variante="titulo" maiusculas>
-          {titulo}
-        </Texto>
+        <Texto variante="titulo">{titulo}</Texto>
         {chamada ? (
-          <Texto variante="marcador" cor={acento}>
+          <Texto variante="chamada" cor={cores.tintaMedia}>
             {chamada}
           </Texto>
         ) : null}
@@ -83,19 +80,13 @@ export function TelaModulo({
 const estilos = StyleSheet.create({
   fundo: {
     flex: 1,
-    backgroundColor: cores.papel,
+    backgroundColor: cores.fundo,
   },
   conteudo: {
-    paddingHorizontal: espaco.lg,
-    gap: espaco.lg,
+    paddingHorizontal: medida.margem,
+    gap: espaco.xl,
   },
   cabecalho: {
     gap: espaco.xs,
-  },
-  risco: {
-    width: 44,
-    height: 5,
-    borderRadius: 3,
-    marginBottom: espaco.sm,
   },
 });

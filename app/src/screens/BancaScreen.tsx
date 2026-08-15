@@ -23,7 +23,7 @@ import { Cartao } from '@/components/ui/Cartao';
 import { EstadoVazio } from '@/components/ui/Estados';
 import { Selo } from '@/components/ui/Selo';
 import { Texto } from '@/components/ui/Texto';
-import { cores, espaco } from '@/theme';
+import { cores, espaco, raio, sombra } from '@/theme';
 import { dinheiro, mesAtual, mesPorExtenso, primeiroNome, quantidade } from '@/utils/formato';
 
 export function BancaScreen() {
@@ -62,49 +62,63 @@ export function BancaScreen() {
     >
       {dados ? (
         <>
-          <Cartao acento={cores.modulo.grana}>
+          {/*
+            O lugar do banner do template na home. Aqui ele é preenchido na
+            primária porque é o único bloco cheio da tela — o resto é branco
+            sobre o fundo, como no template.
+          */}
+          <View style={estilos.sacola}>
             <View style={estilos.linhaTopo}>
-              <Texto variante="secao" cor={cores.tintaFraca} maiusculas>
+              <Texto variante="rotuloCampo" cor={cores.lilasTinta}>
                 A sacola
               </Texto>
-              <Texto variante="legenda" cor={cores.tintaFraca}>
+              <Texto variante="corpo" cor={cores.lilasTinta}>
                 {mesPorExtenso(mesAtual())}
               </Texto>
             </View>
 
-            <Texto variante="numeroGrande" cor={cores.tinta}>
+            <Texto variante="numeroGrande" cor={cores.branco}>
               {dinheiro(dados.resumo.saidas)}
             </Texto>
-            <Texto variante="legenda" cor={cores.tintaMedia}>
+            <Texto variante="corpo" cor={cores.lilasTinta}>
               gasto no mês
             </Texto>
 
             <View style={estilos.colunas}>
               <View style={estilos.coluna}>
-                <Texto variante="legenda" cor={cores.tintaFraca}>
+                <Texto variante="legenda" cor={cores.lilasTinta}>
                   Entrou
                 </Texto>
-                <Texto variante="corpoForte">{dinheiro(dados.resumo.entradas)}</Texto>
+                <Texto variante="corpoForte" cor={cores.branco}>
+                  {dinheiro(dados.resumo.entradas)}
+                </Texto>
               </View>
               <View style={estilos.coluna}>
-                <Texto variante="legenda" cor={cores.tintaFraca}>
+                <Texto variante="legenda" cor={cores.lilasTinta}>
                   Sobrou
                 </Texto>
+                {/*
+                  Vermelho/verde não sobrevivem ao fundo lilás, mas o sinal de
+                  saldo negativo não pode sumir: o rosa pálido é o que lê como
+                  alerta sobre a primária.
+                */}
                 <Texto
                   variante="corpoForte"
-                  cor={dados.resumo.resultado < 0 ? cores.erro : cores.sucesso}
+                  cor={dados.resumo.resultado < 0 ? cores.erroTinta : cores.branco}
                 >
                   {dinheiro(dados.resumo.resultado)}
                 </Texto>
               </View>
               <View style={estilos.coluna}>
-                <Texto variante="legenda" cor={cores.tintaFraca}>
+                <Texto variante="legenda" cor={cores.lilasTinta}>
                   Nas contas
                 </Texto>
-                <Texto variante="corpoForte">{dinheiro(dados.resumo.saldoTotal)}</Texto>
+                <Texto variante="corpoForte" cor={cores.branco}>
+                  {dinheiro(dados.resumo.saldoTotal)}
+                </Texto>
               </View>
             </View>
-          </Cartao>
+          </View>
 
           <Secao titulo="Precisa de você">
             {semPendencia ? (
@@ -191,7 +205,7 @@ export function BancaScreen() {
           </Secao>
 
           <Link href="/perfil" asChild>
-            <Texto variante="corpoForte" cor={cores.olive} estilo={estilos.perfil}>
+            <Texto variante="corpoForte" cor={cores.lilas} estilo={estilos.perfil}>
               Meu perfil
             </Texto>
           </Link>
@@ -202,6 +216,13 @@ export function BancaScreen() {
 }
 
 const estilos = StyleSheet.create({
+  sacola: {
+    backgroundColor: cores.lilas,
+    borderRadius: raio.lg,
+    padding: espaco.xl,
+    gap: espaco.sm,
+    ...sombra.cartao,
+  },
   linhaTopo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -212,7 +233,8 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     gap: espaco.xl,
     borderTopWidth: 1,
-    borderTopColor: cores.linha,
+    // Filete claro por cima da primária — o cinza do tema sumiria aqui.
+    borderTopColor: 'rgba(255, 255, 255, 0.28)',
     paddingTop: espaco.md,
     marginTop: espaco.xs,
   },

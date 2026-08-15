@@ -1,4 +1,10 @@
-/** Etiqueta curta: status de lavagem, alerta de estoque, origem da transação. */
+/**
+ * Etiqueta curta: status de lavagem, alerta de estoque, origem da transação.
+ *
+ * No template a etiqueta é um chip de fundo tingido, sem borda e sem caixa
+ * alta — a cor é que carrega o significado. `preenchido` sobe o contraste
+ * (fundo cheio, texto branco) para o que exige ação.
+ */
 
 import { StyleSheet, View } from 'react-native';
 import { cores, espaco, raio } from '@/theme';
@@ -16,11 +22,12 @@ export function Selo({ texto, cor = cores.tintaMedia, preenchido = false }: Prop
     <View
       style={[
         estilos.selo,
-        { borderColor: cor },
-        preenchido && { backgroundColor: cor },
+        // O sufixo de 2 dígitos é o alfa em hex: ~12% de opacidade da própria
+        // cor, que dá o tingido do template sem precisar de uma cor por caso.
+        { backgroundColor: preenchido ? cor : `${cor}1F` },
       ]}
     >
-      <Texto variante="legenda" cor={preenchido ? cores.papel : cor} maiusculas>
+      <Texto variante="legenda" cor={preenchido ? cores.branco : cor}>
         {texto}
       </Texto>
     </View>
@@ -30,9 +37,8 @@ export function Selo({ texto, cor = cores.tintaMedia, preenchido = false }: Prop
 const estilos = StyleSheet.create({
   selo: {
     alignSelf: 'flex-start',
-    borderWidth: 1,
     borderRadius: raio.pilula,
-    paddingHorizontal: espaco.sm,
-    paddingVertical: 2,
+    paddingHorizontal: espaco.md,
+    paddingVertical: 4,
   },
 });

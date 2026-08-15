@@ -64,7 +64,7 @@ export function EntrarScreen() {
         />
 
         <Link href="/recuperar-senha" asChild>
-          <Texto variante="corpoForte" cor={cores.olive} estilo={estilos.link}>
+          <Texto variante="corpoForte" cor={cores.lilas} estilo={estilos.link}>
             Esqueci minha senha
           </Texto>
         </Link>
@@ -75,7 +75,7 @@ export function EntrarScreen() {
           Ainda não tem conta?
         </Texto>
         <Link href="/cadastro" asChild>
-          <Texto variante="corpoForte" cor={cores.olive}>
+          <Texto variante="corpoForte" cor={cores.lilas}>
             Criar conta
           </Texto>
         </Link>

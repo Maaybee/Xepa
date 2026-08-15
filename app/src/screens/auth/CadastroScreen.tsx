@@ -99,7 +99,7 @@ export function CadastroScreen() {
           Já tem conta?
         </Texto>
         <Link href="/entrar" asChild>
-          <Texto variante="corpoForte" cor={cores.olive}>
+          <Texto variante="corpoForte" cor={cores.lilas}>
             Entrar
           </Texto>
         </Link>

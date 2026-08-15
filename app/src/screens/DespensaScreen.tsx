@@ -5,10 +5,16 @@
  * olhando: dar baixa no que consumiu (SD08) e cadastrar item novo (SD07). O
  * alerta de reposição (RN08) chega junto da resposta da baixa, não numa
  * consulta separada.
+ *
+ * Layout na forma da tela de categoria do template: busca no topo e grade de
+ * dois cartões por linha. O botão redondo do cartão dá baixa de uma unidade;
+ * tocar o cartão abre o painel de baixa com quantidade livre, porque o cartão
+ * do template não tem espaço para um formulário dentro.
  */
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import * as despensaApi from '@/services/api/despensa';
 import type { Produto } from '@/types/api';
 import { useRequisicao } from '@/hooks/useRequisicao';
@@ -17,10 +23,11 @@ import { TelaModulo } from '@/components/common/TelaModulo';
 import { Secao } from '@/components/common/Secao';
 import { Aviso } from '@/components/ui/Aviso';
 import { Botao } from '@/components/ui/Botao';
+import { Busca } from '@/components/ui/Busca';
 import { Campo } from '@/components/ui/Campo';
 import { Cartao } from '@/components/ui/Cartao';
+import { CartaoItem } from '@/components/ui/CartaoItem';
 import { EstadoVazio } from '@/components/ui/Estados';
-import { Selo } from '@/components/ui/Selo';
 import { Texto } from '@/components/ui/Texto';
 import { cores, espaco } from '@/theme';
 import { quantidade } from '@/utils/formato';
@@ -30,10 +37,23 @@ const ACENTO = cores.modulo.despensa;
 export function DespensaScreen() {
   const estoque = useRequisicao(() => despensaApi.listarEstoque(), []);
   const acao = useAcao();
+  const router = useRouter();
   const [novoAberto, setNovoAberto] = useState(false);
+  const [busca, setBusca] = useState('');
+  const [emBaixa, setEmBaixa] = useState<Produto | null>(null);
 
   const produtos = estoque.dados?.produtos ?? [];
   const emAlerta = produtos.filter((produto) => produto.emAlerta);
+
+  const filtrados = useMemo(() => {
+    const termo = busca.trim().toLowerCase();
+    if (termo === '') return produtos;
+    return produtos.filter(
+      (produto) =>
+        produto.nome.toLowerCase().includes(termo) ||
+        (produto.categoria ?? '').toLowerCase().includes(termo),
+    );
+  }, [produtos, busca]);
 
   async function consumir(produto: Produto, valor: number) {
     const resultado = await acao.executar(
@@ -53,6 +73,8 @@ export function DespensaScreen() {
       erro={estoque.erro}
       aoRecarregar={estoque.recarregar}
     >
+      <Busca valor={busca} aoMudar={setBusca} dica="Buscar na despensa" />
+
       {acao.erro ? <Aviso mensagem={acao.erro} tom="erro" /> : null}
       {acao.aviso ? <Aviso mensagem={acao.aviso} tom="atencao" /> : null}
 
@@ -67,12 +89,22 @@ export function DespensaScreen() {
         />
       ) : null}
 
+      {/* RF008 — a leitura da nota é o caminho rápido de encher a despensa. */}
+      <Secao titulo="Nota fiscal" aoVerTudo={() => router.push('/nota')} rotuloVerTudo="Ler nota">
+        <Cartao aoTocar={() => router.push('/nota')}>
+          <Texto variante="cartaoNome">Ler o QR Code da nota</Texto>
+          <Texto variante="corpo" cor={cores.tintaMedia}>
+            Os itens entram no estoque e o total vira gasto em “Mercado”.
+          </Texto>
+        </Cartao>
+      </Secao>
+
       <Secao
         titulo="Estoque"
         acao={
           <Botao
             titulo={novoAberto ? 'Fechar' : 'Novo item'}
-            aparencia="contorno"
+            aparencia="texto"
             compacto
             aoTocar={() => setNovoAberto((aberto) => !aberto)}
           />
@@ -98,92 +130,90 @@ export function DespensaScreen() {
           />
         ) : null}
 
-        {produtos.map((produto) => (
-          <LinhaProduto
-            key={produto.id}
-            produto={produto}
-            ocupado={acao.executando}
-            aoConsumir={(valor) => void consumir(produto, valor)}
+        {produtos.length > 0 && filtrados.length === 0 ? (
+          <EstadoVazio
+            titulo="nada com esse nome"
+            descricao="Tente outro termo ou limpe a busca."
           />
-        ))}
+        ) : null}
+
+        <View style={estilos.grade}>
+          {filtrados.map((produto) => (
+            <CartaoItem
+              key={produto.id}
+              nome={produto.nome}
+              apoio={produto.categoria ?? undefined}
+              destaque={`${quantidade(produto.quantidadeAtual)} ${produto.unidade}`}
+              icone={produto.emAlerta ? 'alert-circle' : 'package'}
+              acento={produto.emAlerta ? cores.atencao : ACENTO}
+              aoTocar={() =>
+                setEmBaixa((atual) => (atual?.id === produto.id ? null : produto))
+              }
+              aoAgir={
+                produto.quantidadeAtual > 0 && !acao.executando
+                  ? () => void consumir(produto, 1)
+                  : undefined
+              }
+              iconeAcao="minus"
+              rotuloAcao={`Dar baixa de 1 ${produto.unidade} de ${produto.nome}`}
+            />
+          ))}
+        </View>
+
+        {emBaixa ? (
+          <PainelDeBaixa
+            produto={emBaixa}
+            ocupado={acao.executando}
+            aoFechar={() => setEmBaixa(null)}
+            aoConsumir={(valor) => {
+              void consumir(emBaixa, valor);
+              setEmBaixa(null);
+            }}
+          />
+        ) : null}
       </Secao>
     </TelaModulo>
   );
 }
 
-function LinhaProduto({
+/** Baixa com quantidade livre, para o que não é "consumi uma unidade". */
+function PainelDeBaixa({
   produto,
   ocupado,
+  aoFechar,
   aoConsumir,
 }: {
   produto: Produto;
   ocupado: boolean;
+  aoFechar(): void;
   aoConsumir(quantidade: number): void;
 }) {
-  const [aberto, setAberto] = useState(false);
   const [valor, setValor] = useState('1');
+  const numero = Number(valor.replace(',', '.'));
 
   return (
-    <Cartao acento={produto.emAlerta ? cores.atencao : ACENTO}>
-      <View style={estilos.linha}>
-        <View style={estilos.identificacao}>
-          <Texto variante="corpoForte">{produto.nome}</Texto>
-          {produto.categoria ? (
-            <Texto variante="legenda" cor={cores.tintaFraca}>
-              {produto.categoria}
-            </Texto>
-          ) : null}
-        </View>
-
-        <View style={estilos.numeros}>
-          <Texto variante="tituloMenor" cor={produto.emAlerta ? cores.atencao : cores.tinta}>
-            {quantidade(produto.quantidadeAtual)}
-          </Texto>
-          <Texto variante="legenda" cor={cores.tintaFraca}>
-            {produto.unidade}
-          </Texto>
-        </View>
+    <Cartao acento={cores.modulo.despensa}>
+      <View style={estilos.cabecalhoPainel}>
+        <Texto variante="cartaoNome">{produto.nome}</Texto>
+        <Botao titulo="Fechar" aparencia="texto" compacto aoTocar={aoFechar} />
       </View>
-
-      <View style={estilos.linha}>
-        <View style={estilos.selos}>
-          {produto.emAlerta ? <Selo texto="repor" cor={cores.atencao} preenchido /> : null}
-          {produto.monitorado && produto.quantidadeMinima !== null ? (
-            <Selo texto={`mín. ${quantidade(produto.quantidadeMinima)}`} />
-          ) : null}
-        </View>
-
-        <Botao
-          titulo={aberto ? 'Cancelar' : 'Consumi'}
-          aparencia="texto"
-          compacto
-          aoTocar={() => setAberto((estava) => !estava)}
-        />
-      </View>
-
-      {aberto ? (
-        <View style={estilos.baixa}>
-          <View style={estilos.campoBaixa}>
-            <Campo
-              rotulo={`Quanto saiu (${produto.unidade})`}
-              value={valor}
-              onChangeText={setValor}
-              keyboardType="decimal-pad"
-            />
-          </View>
-          <Botao
-            titulo="Dar baixa"
-            compacto
-            carregando={ocupado}
-            desabilitado={!(Number(valor.replace(',', '.')) > 0)}
-            aoTocar={() => {
-              aoConsumir(Number(valor.replace(',', '.')));
-              setAberto(false);
-              setValor('1');
-            }}
+      <View style={estilos.baixa}>
+        <View style={estilos.campoBaixa}>
+          <Campo
+            rotulo={`Quanto saiu (${produto.unidade})`}
+            value={valor}
+            onChangeText={setValor}
+            keyboardType="decimal-pad"
           />
         </View>
-      ) : null}
+        <Botao
+          titulo="Dar baixa"
+          compacto
+          carregando={ocupado}
+          desabilitado={!(numero > 0)}
+          aoTocar={() => aoConsumir(numero)}
+        />
+      </View>
     </Cartao>
   );
 }
@@ -253,32 +283,22 @@ function FormularioNovoProduto({
 }
 
 const estilos = StyleSheet.create({
-  linha: {
+  grade: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: espaco.lg,
+  },
+  cabecalhoPainel: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: espaco.md,
   },
-  identificacao: {
-    flex: 1,
-    gap: 2,
-  },
-  numeros: {
-    alignItems: 'flex-end',
-  },
-  selos: {
-    flexDirection: 'row',
-    gap: espaco.sm,
-    flexWrap: 'wrap',
-    flex: 1,
-  },
   baixa: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: espaco.md,
-    borderTopWidth: 1,
-    borderTopColor: cores.linha,
-    paddingTop: espaco.md,
   },
   campoBaixa: {
     flex: 1,

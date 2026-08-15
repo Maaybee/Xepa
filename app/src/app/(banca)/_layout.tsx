@@ -7,7 +7,7 @@ import { Redirect, Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSessao } from '@/contexts/SessaoContext';
-import { alturaBarraDeAbas, cores, fontes } from '@/theme';
+import { alturaBarraDeAbas, cores, fontes, raio, sombra } from '@/theme';
 
 export default function LayoutBanca() {
   const { restaurando, autenticado } = useSessao();
@@ -20,43 +20,50 @@ export default function LayoutBanca() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: cores.olive,
+        tabBarActiveTintColor: cores.lilas,
         tabBarInactiveTintColor: cores.tintaFraca,
         tabBarStyle: {
-          backgroundColor: cores.papelCartao,
-          borderTopColor: cores.linha,
+          backgroundColor: cores.superficie,
+          // No template a barra é uma superfície solta: cantos de cima
+          // arredondados e sombra subindo, sem filete de borda.
+          borderTopWidth: 0,
+          borderTopLeftRadius: raio.md,
+          borderTopRightRadius: raio.md,
+          position: 'absolute',
+          ...sombra.barra,
           // A altura é fixada aqui para que `TelaModulo` saiba quanto
           // reservar no fim da rolagem.
           height: alturaBarraDeAbas + insets.bottom,
-          paddingTop: 6,
+          paddingTop: 8,
         },
         tabBarLabelStyle: {
-          fontFamily: fontes.corpoMedio,
-          fontSize: 11,
+          fontFamily: fontes.corpoForte,
+          fontSize: 12,
         },
-        sceneStyle: { backgroundColor: cores.papel },
+        tabBarIconStyle: { height: 24 },
+        sceneStyle: { backgroundColor: cores.fundo },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'A banca',
-          tabBarIcon: ({ color, size }) => <Feather name="home" color={color} size={size} />,
+          tabBarIcon: ({ color }) => <Feather name="home" color={color} size={24} />,
         }}
       />
       <Tabs.Screen
         name="despensa"
         options={{
           title: 'Despensa',
-          tabBarIcon: ({ color, size }) => <Feather name="box" color={color} size={size} />,
+          tabBarIcon: ({ color }) => <Feather name="box" color={color} size={24} />,
         }}
       />
       <Tabs.Screen
         name="grana"
         options={{
           title: 'Grana',
-          tabBarIcon: ({ color, size }) => (
-            <Feather name="dollar-sign" color={color} size={size} />
+          tabBarIcon: ({ color }) => (
+            <Feather name="dollar-sign" color={color} size={24} />
           ),
         }}
       />
@@ -64,14 +71,14 @@ export default function LayoutBanca() {
         name="cabeca"
         options={{
           title: 'Cabeça',
-          tabBarIcon: ({ color, size }) => <Feather name="book-open" color={color} size={size} />,
+          tabBarIcon: ({ color }) => <Feather name="book-open" color={color} size={24} />,
         }}
       />
       <Tabs.Screen
         name="roupa"
         options={{
           title: 'Roupa',
-          tabBarIcon: ({ color, size }) => <Feather name="wind" color={color} size={size} />,
+          tabBarIcon: ({ color }) => <Feather name="wind" color={color} size={24} />,
         }}
       />
     </Tabs>

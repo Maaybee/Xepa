@@ -8,7 +8,7 @@ import { Texto } from './Texto';
 export function Carregando({ rotulo = 'Carregando…' }: { rotulo?: string }) {
   return (
     <View style={estilos.centro}>
-      <ActivityIndicator color={cores.olive} />
+      <ActivityIndicator color={cores.lilas} />
       <Texto variante="legenda" cor={cores.tintaFraca}>
         {rotulo}
       </Texto>
@@ -19,7 +19,7 @@ export function Carregando({ rotulo = 'Carregando…' }: { rotulo?: string }) {
 export function EstadoVazio({ titulo, descricao }: { titulo: string; descricao?: string }) {
   return (
     <View style={estilos.centro}>
-      <Texto variante="marcador" cor={cores.tintaFraca}>
+      <Texto variante="chamada" cor={cores.tintaFraca}>
         {titulo}
       </Texto>
       {descricao ? (

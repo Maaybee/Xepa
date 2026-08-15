@@ -1,6 +1,6 @@
 /**
- * Raiz do app: carrega as fontes do brand kit, monta o provedor de sessão e
- * segura a splash até tudo estar pronto.
+ * Raiz do app: carrega a Poppins, monta o provedor de sessão e segura a splash
+ * até tudo estar pronto.
  *
  * A decisão de para onde ir (login ou banca) é dos layouts de grupo — aqui
  * ainda não se sabe se existe sessão guardada no aparelho.
@@ -12,13 +12,11 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts } from 'expo-font';
-import { Anton_400Regular } from '@expo-google-fonts/anton';
-import { PermanentMarker_400Regular } from '@expo-google-fonts/permanent-marker';
 import {
-  InstrumentSans_400Regular,
-  InstrumentSans_500Medium,
-  InstrumentSans_600SemiBold,
-} from '@expo-google-fonts/instrument-sans';
+  Poppins_400Regular,
+  Poppins_500Medium,
+  Poppins_600SemiBold,
+} from '@expo-google-fonts/poppins';
 import { SessaoProvider } from '@/contexts/SessaoContext';
 import { cores } from '@/theme';
 
@@ -26,11 +24,9 @@ void SplashScreen.preventAutoHideAsync();
 
 export default function LayoutRaiz() {
   const [fontesProntas, erroDeFonte] = useFonts({
-    Anton_400Regular,
-    PermanentMarker_400Regular,
-    InstrumentSans_400Regular,
-    InstrumentSans_500Medium,
-    InstrumentSans_600SemiBold,
+    Poppins_400Regular,
+    Poppins_500Medium,
+    Poppins_600SemiBold,
   });
 
   useEffect(() => {
@@ -47,12 +43,18 @@ export default function LayoutRaiz() {
         <Stack
           screenOptions={{
             headerShown: false,
-            contentStyle: { backgroundColor: cores.papel },
+            contentStyle: { backgroundColor: cores.fundo },
           }}
         >
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(banca)" />
           <Stack.Screen name="perfil" options={{ presentation: 'modal' }} />
+          {/* Detalhe da matéria (SD20): empilha sobre as abas, não é uma delas. */}
+          <Stack.Screen name="materia/[id]" />
+          {/* Open Finance (SD25–SD27): entra pela Grana, fora das abas. */}
+          <Stack.Screen name="bancos" />
+          {/* Leitura de nota (SD06): entra pela Despensa, fora das abas. */}
+          <Stack.Screen name="nota" />
         </Stack>
       </SessaoProvider>
     </SafeAreaProvider>

@@ -72,7 +72,7 @@ export function RoupaScreen() {
 
       {paraLavar.length > 0 ? (
         <Cartao acento={ACENTO}>
-          <Texto variante="secao" cor={cores.tintaFraca} maiusculas>
+          <Texto variante="corpo" cor={cores.tintaMedia}>
             Na pilha de lavar
           </Texto>
           <Texto variante="corpo">{paraLavar.map((peca) => peca.nome).join(', ')}</Texto>

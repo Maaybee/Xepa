@@ -1,9 +1,15 @@
-/** Campo de texto com rótulo, dica e erro. */
+/**
+ * Campo de texto na forma do template: sem caixa. O rótulo fica em 16 semibold
+ * acima, o valor em 18 medium, e a única moldura é o filete de 1pt embaixo.
+ *
+ * O filete assume a primária no foco e a cor de erro quando há erro — é o
+ * único sinal de estado que o campo tem, já que não existe borda para tingir.
+ */
 
 import { useState } from 'react';
 import { StyleSheet, TextInput, View } from 'react-native';
 import type { TextInputProps } from 'react-native';
-import { cores, espaco, raio, textos } from '@/theme';
+import { cores, espaco, textos } from '@/theme';
 import { Texto } from './Texto';
 
 interface Props extends Omit<TextInputProps, 'style'> {
@@ -14,10 +20,11 @@ interface Props extends Omit<TextInputProps, 'style'> {
 
 export function Campo({ rotulo, dica, erro, ...resto }: Props) {
   const [focado, setFocado] = useState(false);
+  const corDoFilete = erro ? cores.erro : focado ? cores.lilas : cores.linhaForte;
 
   return (
     <View style={estilos.container}>
-      <Texto variante="rotulo" cor={cores.tintaMedia}>
+      <Texto variante="rotuloCampo" cor={cores.tintaMedia}>
         {rotulo}
       </Texto>
       <TextInput
@@ -31,11 +38,7 @@ export function Campo({ rotulo, dica, erro, ...resto }: Props) {
           resto.onBlur?.(evento);
         }}
         placeholderTextColor={cores.tintaFraca}
-        style={[
-          estilos.entrada,
-          focado && { borderColor: cores.olive },
-          erro ? { borderColor: cores.erro } : null,
-        ]}
+        style={[estilos.entrada, { borderBottomColor: corDoFilete }]}
       />
       {erro ? (
         <Texto variante="legenda" cor={cores.erro}>
@@ -55,13 +58,11 @@ const estilos = StyleSheet.create({
     gap: espaco.xs,
   },
   entrada: {
-    ...textos.corpo,
+    ...textos.valorCampo,
     color: cores.tinta,
-    backgroundColor: cores.papelCartao,
-    borderWidth: 1.5,
-    borderColor: cores.linha,
-    borderRadius: raio.md,
-    paddingHorizontal: espaco.md,
-    minHeight: 48,
+    borderBottomWidth: 1,
+    paddingVertical: espaco.sm,
+    paddingHorizontal: 0,
+    minHeight: 44,
   },
 });

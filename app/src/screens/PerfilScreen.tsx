@@ -4,10 +4,14 @@
  * O avatar sai da lista que a API devolve — não há upload próprio (RN04). O
  * vínculo institucional é o que destrava a importação de notas (RF023), que na
  * prática quase nunca está disponível.
+ *
+ * Layout na forma da tela de conta do template: medalhão redondo + nome + email
+ * no topo, filete, e o "sair" como botão suave no pé. Como o avatar da API é
+ * texto e não imagem, o medalhão mostra a inicial do nome.
  */
 
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as contaApi from '@/services/api/conta';
 import { useSessao } from '@/contexts/SessaoContext';
@@ -17,7 +21,6 @@ import { TelaModulo } from '@/components/common/TelaModulo';
 import { Secao } from '@/components/common/Secao';
 import { Aviso } from '@/components/ui/Aviso';
 import { Botao } from '@/components/ui/Botao';
-import { Cartao } from '@/components/ui/Cartao';
 import { Texto } from '@/components/ui/Texto';
 import { cores, espaco, raio } from '@/theme';
 
@@ -43,10 +46,11 @@ export function PerfilScreen() {
     setSalvandoVinculo(false);
   }
 
+  const inicial = perfil?.nome?.trim().charAt(0).toUpperCase() ?? '?';
+
   return (
     <TelaModulo
       titulo="Perfil"
-      chamada={perfil?.email}
       modulo="banca"
       erro={apoio.erro}
       aoRecarregar={apoio.recarregar}
@@ -54,60 +58,56 @@ export function PerfilScreen() {
     >
       {acao.erro ? <Aviso mensagem={acao.erro} tom="erro" /> : null}
 
-      <Cartao>
-        <Texto variante="secao" cor={cores.tintaFraca} maiusculas>
-          Conta
-        </Texto>
-        <Texto variante="tituloMenor">{perfil?.nome}</Texto>
-        <Texto variante="corpo" cor={cores.tintaMedia}>
-          {perfil?.email}
-        </Texto>
-      </Cartao>
+      <View style={estilos.identidade}>
+        <View style={estilos.medalhao}>
+          <Texto variante="titulo" cor={cores.lilasForte}>
+            {inicial}
+          </Texto>
+        </View>
+        <View style={estilos.nome}>
+          <Texto variante="tituloMenor" numberOfLines={1}>
+            {perfil?.nome}
+          </Texto>
+          <Texto variante="chamada" cor={cores.tintaMedia} numberOfLines={1}>
+            {perfil?.email}
+          </Texto>
+        </View>
+      </View>
+
+      <View style={estilos.filete} />
 
       <Secao titulo="Avatar">
         <View style={estilos.grade}>
           {(apoio.dados?.avatares.avatares ?? []).map((avatar) => {
             const escolhido = perfil?.avatar?.id === avatar.id;
             return (
-              <Texto
+              <Chip
                 key={avatar.id}
-                variante="legenda"
-                cor={escolhido ? cores.papel : cores.tintaMedia}
-                onPress={() => void atualizar({ avatarId: escolhido ? null : avatar.id })}
-                estilo={[
-                  estilos.opcao,
-                  escolhido ? { backgroundColor: cores.olive, borderColor: cores.olive } : null,
-                ]}
-              >
-                {avatar.descricao}
-              </Texto>
+                rotulo={avatar.descricao}
+                escolhido={escolhido}
+                aoTocar={() => void atualizar({ avatarId: escolhido ? null : avatar.id })}
+              />
             );
           })}
         </View>
       </Secao>
 
-      <Secao titulo="Instituição de ensino">
-        <Texto variante="legenda" cor={cores.tintaFraca}>
+      <Secao titulo="Instituição">
+        <Texto variante="corpo" cor={cores.tintaMedia}>
           O vínculo é o que permite tentar importar notas (RF023, RN05).
         </Texto>
         <View style={estilos.grade}>
           {(apoio.dados?.instituicoes.instituicoes ?? []).map((instituicao) => {
             const escolhida = perfil?.instituicao?.id === instituicao.id;
             return (
-              <Texto
+              <Chip
                 key={instituicao.id}
-                variante="legenda"
-                cor={escolhida ? cores.papel : cores.tintaMedia}
-                onPress={() =>
+                rotulo={instituicao.nome}
+                escolhido={escolhida}
+                aoTocar={() =>
                   void atualizar({ instituicaoId: escolhida ? null : instituicao.id })
                 }
-                estilo={[
-                  estilos.opcao,
-                  escolhida ? { backgroundColor: cores.olive, borderColor: cores.olive } : null,
-                ]}
-              >
-                {instituicao.nome}
-              </Texto>
+              />
             );
           })}
         </View>
@@ -115,7 +115,7 @@ export function PerfilScreen() {
 
       <Botao
         titulo="Sair da conta"
-        aparencia="perigo"
+        aparencia="suave"
         desabilitado={salvandoVinculo}
         aoTocar={() => {
           void (async () => {
@@ -129,18 +129,71 @@ export function PerfilScreen() {
   );
 }
 
+/** Chip de escolha única dentro de um grupo — o mesmo do filtro do template. */
+function Chip({
+  rotulo,
+  escolhido,
+  aoTocar,
+}: {
+  rotulo: string;
+  escolhido: boolean;
+  aoTocar(): void;
+}) {
+  return (
+    <Pressable
+      onPress={aoTocar}
+      accessibilityRole="button"
+      accessibilityState={{ selected: escolhido }}
+      style={({ pressed }) => [
+        estilos.chip,
+        escolhido && estilos.chipEscolhido,
+        pressed && estilos.chipPressionado,
+      ]}
+    >
+      <Texto variante="corpoForte" cor={escolhido ? cores.branco : cores.tintaMedia}>
+        {rotulo}
+      </Texto>
+    </Pressable>
+  );
+}
+
 const estilos = StyleSheet.create({
+  identidade: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espaco.lg,
+  },
+  medalhao: {
+    width: 64,
+    height: 64,
+    borderRadius: 27,
+    backgroundColor: cores.lilasTinta,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nome: {
+    flex: 1,
+    gap: 2,
+  },
+  filete: {
+    height: 1,
+    backgroundColor: cores.linha,
+  },
   grade: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: espaco.sm,
   },
-  opcao: {
-    borderWidth: 1,
-    borderColor: cores.linhaForte,
+  chip: {
     borderRadius: raio.pilula,
-    paddingHorizontal: espaco.md,
-    paddingVertical: espaco.sm,
-    overflow: 'hidden',
+    backgroundColor: cores.fundoMudo,
+    paddingHorizontal: espaco.lg,
+    paddingVertical: espaco.md,
+  },
+  chipEscolhido: {
+    backgroundColor: cores.lilas,
+  },
+  chipPressionado: {
+    opacity: 0.75,
   },
 });

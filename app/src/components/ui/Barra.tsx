@@ -14,7 +14,7 @@ interface Props {
   corDeEstouro?: string;
 }
 
-export function Barra({ proporcao, cor = cores.olive, corDeEstouro = cores.erro }: Props) {
+export function Barra({ proporcao, cor = cores.lilas, corDeEstouro = cores.erro }: Props) {
   const estourou = proporcao > 1;
   const largura = `${Math.min(Math.max(proporcao, 0), 1) * 100}%` as const;
 
@@ -29,7 +29,7 @@ const estilos = StyleSheet.create({
   trilho: {
     height: 8,
     borderRadius: raio.pilula,
-    backgroundColor: cores.oliveTinta,
+    backgroundColor: cores.lilasTinta,
     overflow: 'hidden',
   },
   preenchimento: {

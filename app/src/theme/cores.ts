@@ -1,46 +1,50 @@
 /**
- * Paleta do Xepa, materializada a partir do brand kit descrito em
- * `docs/01-visao-geral.md`: base off-white (papel), tinta quase preta, olive
- * profundo como única cor primária e tons dessaturados por módulo usados só
- * como pequenos acentos.
+ * Paleta do Xepa na linguagem visual do template de mercado: superfície branca,
+ * fundo quase branco puxado pro lilás, uma primária só e acentos suaves.
  *
- * Regra do brand: cor de módulo é acento — aparece em selo, ícone e detalhe,
- * nunca preenchendo áreas grandes. Área grande é papel.
+ * O brand kit antigo (papel off-white + olive profundo) saiu junto com as
+ * fontes de feira — ver `tipografia.ts`. A regra que sobreviveu é a mesma: cor
+ * de módulo é acento, aparece em selo, ícone e detalhe, nunca preenchendo área
+ * grande. Área grande é superfície.
  */
 
 export const cores = {
-  /** Base: papel de feira, não branco puro. */
-  papel: '#F4F1E8',
-  papelFundo: '#EDE9DC',
-  papelCartao: '#FBFAF5',
+  /** Base: branco e um quase-branco levemente lilás. */
+  fundo: '#FBFAFF',
+  fundoMudo: '#F4F2FC',
+  superficie: '#FFFFFF',
 
-  /** Tinta: quase preta, nunca #000. */
-  tinta: '#1A1A18',
-  tintaMedia: '#4A4A44',
-  tintaFraca: '#84837A',
+  /** Texto: roxo-azulado bem escuro, nunca #000. */
+  tinta: '#23204A',
+  tintaMedia: '#6E6A93',
+  tintaFraca: '#A8A4C4',
 
-  /** Primária. */
-  olive: '#414D23',
-  oliveClaro: '#5C6B33',
-  oliveTinta: '#E4E5D2',
+  /** Primária: lilás. */
+  lilas: '#9B7EDE',
+  lilasForte: '#7B5BC7',
+  lilasTinta: '#F0EAFB',
 
-  linha: '#DCD8C8',
-  linhaForte: '#C4BFAB',
+  /** Secundária: azul. */
+  azul: '#6C8BE0',
+  azulTinta: '#E8EEFC',
 
-  /** Acentos de módulo — dessaturados de propósito. */
+  linha: '#EAE6F7',
+  linhaForte: '#D8D2EE',
+
+  /** Acentos de módulo — dentro do espectro lilás→azul, com um rosa. */
   modulo: {
-    banca: '#414D23',
-    despensa: '#A9714B',
-    grana: '#4F7263',
-    cabeca: '#59698C',
-    roupa: '#7C6289',
+    banca: '#9B7EDE',
+    despensa: '#F0A5C9',
+    grana: '#6FBFD8',
+    cabeca: '#6C8BE0',
+    roupa: '#B98FE8',
   },
 
   /** Semânticas. */
-  sucesso: '#4B7345',
-  atencao: '#A8762A',
-  erro: '#A03D3D',
-  erroTinta: '#F5E3E1',
+  sucesso: '#4FBF9F',
+  atencao: '#F0B95C',
+  erro: '#E8697D',
+  erroTinta: '#FDECEF',
 
   branco: '#FFFFFF',
 } as const;
