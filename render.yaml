@@ -16,6 +16,10 @@ services:
     plan: free
     region: oregon
 
+    # `npm ci` e não `yarn`: o repositório tem package-lock.json, e o yarn
+    # ignora esse lockfile e resolve as versões de novo por conta própria.
+    # O `npm run build` é o que compila o TypeScript — sem ele não existe
+    # dist/, e o start falha com MODULE_NOT_FOUND.
     buildCommand: npm ci && npm run build
     startCommand: npm start
 
