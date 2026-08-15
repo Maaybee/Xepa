@@ -1,6 +1,6 @@
 /** Módulo 2 — Despensa (SD06–SD10). */
 
-import type { Produto, ResultadoConsumo } from '@/types/api';
+import type { NotaLida, Produto, ResultadoConsumo, ResultadoDaNota } from '@/types/api';
 import { requisitar } from './cliente';
 
 export function listarEstoque() {
@@ -41,4 +41,14 @@ export function configurarAlerta(
     metodo: 'PUT',
     corpo: { monitorado, quantidadeMinima },
   });
+}
+
+/**
+ * SD06 — leitura de nota fiscal (RF008, RN06, RN18).
+ *
+ * A chave vem do QR Code; os itens, do usuário (RN22). O servidor recusa nota
+ * repetida pela chave e categoriza o gasto como "Mercado".
+ */
+export function processarNota(nota: NotaLida) {
+  return requisitar<ResultadoDaNota>('/despensa/notas', { metodo: 'POST', corpo: nota });
 }
