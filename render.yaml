@@ -20,7 +20,13 @@ services:
     # ignora esse lockfile e resolve as versões de novo por conta própria.
     # O `npm run build` é o que compila o TypeScript — sem ele não existe
     # dist/, e o start falha com MODULE_NOT_FOUND.
-    buildCommand: npm ci && npm run build
+    #
+    # `--include=dev` é obrigatório por causa do NODE_ENV=production abaixo:
+    # com ele, o npm pula as devDependencies, e é lá que estão o typescript e
+    # os @types. Sem a flag o tsc roda sem tipo nenhum e o build quebra em
+    # ~90 erros de "Cannot find name 'process'" — que parecem erro de código,
+    # mas são dependência ausente.
+    buildCommand: npm ci --include=dev && npm run build
     startCommand: npm start
 
     # A rota já existe e também toca o banco, então um deploy que sobe sem
