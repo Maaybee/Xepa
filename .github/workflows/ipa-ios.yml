@@ -44,11 +44,12 @@ jobs:
       #   o build morre compilando `expo-modules-jsi`, com "type of expression
       #   is ambiguous" dentro do código deles.
       #
-      # 26.0 é a que o SDK 57 mira. Se um dia sumir da imagem, cai para a 26.x
-      # mais velha que existir.
+      # O alvo fica no meio: a 26.0 recusa o `weak let` que o expo-modules-jsi
+      # usa, e a 26.3 tropeça em outra coisa no mesmo pacote. Se sumir da
+      # imagem, cai para a 26.x mais velha que existir.
       - name: Selecionar o Xcode
         env:
-          XCODE_ALVO: '26.0'
+          XCODE_ALVO: '26.2'
         run: |
           set -euo pipefail
           echo "Xcodes disponíveis:"
