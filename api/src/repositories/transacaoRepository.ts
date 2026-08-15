@@ -195,3 +195,110 @@ export async function totaisDoPeriodo(
   );
   return rows[0] as { entradas: number; saidas: number };
 }
+
+// ---------------------------------------------------------------------
+// Open Finance — importação de extrato (SD26)
+// ---------------------------------------------------------------------
+
+/**
+ * RN19 — a movimentação já foi importada nesta conta?
+ *
+ * O índice `idx_transacao_externa_unica` garante no banco; esta consulta é o
+ * que permite ignorar em silêncio em vez de estourar violação de unicidade.
+ */
+export async function buscarPorIdExterno(
+  contaId: number,
+  idExterno: string,
+  db: Executor = pool,
+): Promise<{ id: number } | null> {
+  const { rows } = await db.query<{ id: number }>(
+    `SELECT id FROM transacao WHERE conta_id = $1 AND id_externo = $2`,
+    [contaId, idExterno],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * RN20 — acha a nota fiscal que é o mesmo gasto que esta movimentação.
+ *
+ * Critério: mesmo usuário, mesmo valor, saída, origem 'nota', ainda não
+ * conciliada, e data dentro da janela de tolerância. Ordena pela data mais
+ * próxima para que, havendo duas candidatas, a escolhida seja a mais provável.
+ *
+ * **Não casa por conta**: a transação de nota nasce sem `conta_id`, porque o QR
+ * Code da nota não diz qual conta pagou. Exigir conta igual aqui faria a
+ * conciliação nunca acontecer e a RN11 contar todo gasto de mercado duas vezes.
+ * Por isso a nota candidata é a que ainda não tem conta, ou a que já está na
+ * mesma conta da movimentação.
+ */
+export async function buscarNotaConciliavel(
+  usuarioId: number,
+  contaId: number,
+  valor: number,
+  data: string,
+  diasDeTolerancia: number,
+  db: Executor = pool,
+): Promise<{ id: number } | null> {
+  const { rows } = await db.query<{ id: number }>(
+    `SELECT id
+       FROM transacao
+      WHERE usuario_id = $1
+        AND (conta_id IS NULL OR conta_id = $2)
+        AND origem = 'nota'
+        AND tipo = 'saida'
+        AND conciliada_em IS NULL
+        AND id_externo IS NULL
+        AND valor = $3
+        AND data BETWEEN $4::date - $5::int AND $4::date + $5::int
+      ORDER BY abs($4::date - data), id
+      LIMIT 1`,
+    [usuarioId, contaId, valor, data, diasDeTolerancia],
+  );
+  return rows[0] ?? null;
+}
+
+/**
+ * RN20 — carimba a nota como sendo a mesma coisa que a movimentação.
+ *
+ * Aproveita para gravar a conta: a nota não sabia por onde tinha sido paga, e o
+ * extrato sabe. Depois de conciliar, o saldo da conta (RN10) passa a refletir
+ * também as compras que entraram por QR Code.
+ */
+export async function conciliarComExtrato(
+  transacaoId: number,
+  contaId: number,
+  idExterno: string,
+  db: Executor = pool,
+): Promise<void> {
+  await db.query(
+    `UPDATE transacao
+        SET id_externo = $3, conciliada_em = now(), conta_id = COALESCE(conta_id, $2)
+      WHERE id = $1`,
+    [transacaoId, contaId, idExterno],
+  );
+}
+
+/** Insere a movimentação que não casou com nada (origem 'open_finance'). */
+export async function inserirDoExtrato(
+  usuarioId: number,
+  dados: NovaTransacao & { idExterno: string },
+  db: Executor = pool,
+): Promise<{ id: number }> {
+  const { rows } = await db.query<{ id: number }>(
+    `INSERT INTO transacao
+       (usuario_id, conta_id, categoria_id, tipo, valor, data, origem, descricao, id_externo)
+     VALUES ($1, $2, $3, $4, $5, $6, 'open_finance', $7, $8)
+     RETURNING id`,
+    [
+      usuarioId,
+      dados.contaId,
+      dados.categoriaId,
+      dados.tipo,
+      dados.valor,
+      dados.data,
+      dados.descricao,
+      dados.idExterno,
+    ],
+  );
+  return rows[0] as { id: number };
+}

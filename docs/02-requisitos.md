@@ -26,7 +26,7 @@ Aplicação voltada a estudantes universitários que estão lidando pela primeir
 
 | ID | Descrição |
 |----|-----------|
-| RF008 | O sistema deve permitir que o usuário adicione itens ao estoque por leitura do QR Code da nota fiscal. |
+| RF008 | O sistema deve permitir que o usuário adicione itens ao estoque por leitura do QR Code da nota fiscal. O QR identifica a nota (chave de acesso de 44 dígitos); os itens são conferidos pelo usuário antes de entrar no estoque — ver RN22. |
 | RF009 | O sistema deve permitir que o usuário adicione e edite itens manualmente. |
 | RF010 | O sistema deve permitir que o usuário registre o consumo (baixa) de itens. |
 | RF011 | O sistema deve exibir a lista de itens em estoque com suas quantidades. |
@@ -38,7 +38,11 @@ Aplicação voltada a estudantes universitários que estão lidando pela primeir
 | ID | Descrição |
 |----|-----------|
 | RF014 | O sistema deve permitir que o usuário cadastre contas bancárias. |
-| RF015 | O sistema deve registrar automaticamente entradas e saídas de valor a partir das notificações bancárias. |
+| RF015 | O sistema deve registrar automaticamente entradas e saídas de valor a partir das notificações bancárias. **Depreciado**: continua válido no Android, mas deixa de ser o caminho da automação financeira — quem assume é o Open Finance (RF034–RF037), que não depende de permissão de notificação e por isso funciona também no iOS (RNF13). |
+| RF034 | O sistema deve permitir que o usuário conecte uma instituição financeira via Open Finance, registrando o consentimento correspondente. |
+| RF035 | O sistema deve importar contas e extrato das instituições conectadas, gerando transações a partir da movimentação. |
+| RF036 | O sistema deve permitir que o usuário revogue, a qualquer momento, o consentimento de uma instituição conectada. |
+| RF037 | O sistema deve exibir, para cada conexão, o escopo consentido e a data de expiração do consentimento. |
 | RF016 | O sistema deve calcular os gastos a partir dos valores das notas fiscais lidas. |
 | RF017 | O sistema deve permitir o registro manual de despesas (valor, categoria, data). |
 | RF018 | O sistema deve exibir um resumo de gastos por período e por categoria. |
@@ -92,6 +96,10 @@ Aplicação voltada a estudantes universitários que estão lidando pela primeir
 | RN16 | A métrica de progressão compara as notas de uma matéria ao longo das avaliações e do tempo. |
 | RN17 | Cada categoria pode ter no máximo um orçamento por mês de referência (único por usuário + categoria + mês). |
 | RN18 | A leitura de nota fiscal (QR Code) contempla apenas notas de mercado/supermercado; toda transação gerada por nota é automaticamente categorizada como "Mercado". |
+| RN19 | A sincronização de extrato é idempotente: uma movimentação já importada, identificada pelo seu id na instituição, nunca gera uma segunda transação — sincronizar de novo não muda o gasto do mês. |
+| RN20 | Uma compra que chega pela nota fiscal (RF016) e pelo extrato (RF035) é **um** gasto, não dois. Ao sincronizar, uma movimentação de saída que case com uma transação de origem "nota" ainda não conciliada — mesmo usuário, mesmo valor e data dentro de 3 dias — concilia com ela em vez de criar outra. O casamento não exige conta igual: a transação de nota nasce sem conta, porque o QR Code não informa o meio de pagamento; a conciliação é justamente o que descobre por qual conta a compra foi paga. Sem esta regra o gasto do mês (RN11) conta o mesmo dinheiro duas vezes. |
+| RN21 | O consentimento tem escopo e prazo: expira no máximo em 12 meses e pode ser revogado pelo usuário a qualquer momento. Consentimento expirado ou revogado não sincroniza, e revogar não apaga as transações já importadas — elas são histórico financeiro do usuário. |
+| RN22 | O QR Code da NFC-e identifica a nota, não o seu conteúdo: ele carrega uma URL do portal da SEFAZ com a chave de acesso e parâmetros de validação, sem descrição, quantidade ou valor dos produtos. A leitura (RF008) extrai a chave; os itens são informados ou conferidos pelo usuário antes de entrarem no estoque. Obter os itens automaticamente exigiria consultar o portal da SEFAZ, que varia por estado, e não faz parte deste escopo. |
 
 ---
 
@@ -109,7 +117,7 @@ Aplicação voltada a estudantes universitários que estão lidando pela primeir
 
 | ID | Descrição |
 |----|-----------|
-| RNF04 | A leitura do QR Code da nota fiscal deve processar e retornar os itens em até 5 segundos. |
+| RNF04 | A leitura do QR Code da nota fiscal deve reconhecer o código e extrair a chave de acesso em até 5 segundos. O tempo de conferência dos itens (RN22) é do usuário e não entra nessa medida. |
 | RNF05 | As telas principais devem carregar em até 3 segundos em conexão padrão. |
 
 ### Segurança
@@ -120,6 +128,8 @@ Aplicação voltada a estudantes universitários que estão lidando pela primeir
 | RNF07 | Dados sensíveis (financeiros e pessoais) devem trafegar e ser armazenados de forma criptografada. |
 | RNF08 | O sistema deve estar em conformidade com a LGPD quanto à coleta, uso e armazenamento de dados pessoais. |
 | RNF09 | A sessão deve expirar após 30 minutos de inatividade. |
+| RNF17 | O acesso a dados via Open Finance depende de consentimento explícito, informado e revogável do usuário (RF034, RF036), com escopo e prazo visíveis antes do aceite — é o que sustenta a base legal exigida pela LGPD (RNF08). |
+| RNF18 | O Xepa não é instituição participante do Open Finance: a integração se dá através de um provedor autorizado pelo Banco Central, isolado atrás de uma interface própria. Nenhuma credencial bancária do usuário trafega ou é armazenada pelo sistema. |
 
 ### Confiabilidade e Disponibilidade
 
