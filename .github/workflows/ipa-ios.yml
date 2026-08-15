@@ -49,7 +49,7 @@ jobs:
       # imagem, cai para a 26.x mais velha que existir.
       - name: Selecionar o Xcode
         env:
-          XCODE_ALVO: '26.2'
+          XCODE_ALVO: '26.1'
         run: |
           set -euo pipefail
           echo "Xcodes disponíveis:"
