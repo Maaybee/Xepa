@@ -36,20 +36,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # O Xcode desta imagem precisa de mira fina, porque as duas pontas erram:
+      # ATENÇÃO: este workflow ainda NÃO produz um .ipa.
       #
-      # - o padrão traz Swift tools 6.1, e um pacote do Expo SDK 57 exige 6.2:
-      #   o build morre em "Could not resolve package dependencies";
-      # - o mais novo (26.3, Swift 6.2.4) é mais recente que o próprio Expo, e
-      #   o build morre compilando `expo-modules-jsi`, com "type of expression
-      #   is ambiguous" dentro do código deles.
+      # O expo-modules-jsi 57.0.4 (que vem via expo-modules-core, e é a última
+      # da linha do SDK 57) não compila com nenhum Xcode desta imagem:
       #
-      # O alvo fica no meio: a 26.0 recusa o `weak let` que o expo-modules-jsi
-      # usa, e a 26.3 tropeça em outra coisa no mesmo pacote. Se sumir da
-      # imagem, cai para a 26.x mais velha que existir.
+      #   26.0        Swift 6.2.0   'weak' must be a mutable variable
+      #   26.1/26.1.1 Swift 6.2.1   'weak' must be a mutable variable
+      #   26.2        Swift 6.2.3   type of expression is ambiguous (Date.swift)
+      #   26.3        Swift 6.2.4   type of expression is ambiguous (Date.swift)
+      #
+      # Ele usa `weak let`, aceito só a partir do Swift 6.2.2 — e nas versões
+      # que o aceitam, tropeça em inferência de tipo no
+      # JavaScriptCodable+Date.swift. A imagem não tem nenhum Swift 6.2.2, então
+      # a janela é vazia. Atualizar o expo para 57.0.13 não move o
+      # expo-modules-jsi, que já está na última publicada.
+      #
+      # Saídas possíveis, nenhuma aplicada ainda: corrigir a linha do pacote via
+      # patch-package, esperar um patch do Expo, ou usar EAS Build (que exige
+      # conta paga da Apple).
+      #
+      # 26.2 fica como alvo por ser a que chega mais longe: só o Date.swift.
       - name: Selecionar o Xcode
         env:
-          XCODE_ALVO: '26.1.1'
+          XCODE_ALVO: '26.2'
         run: |
           set -euo pipefail
           echo "Xcodes disponíveis:"
