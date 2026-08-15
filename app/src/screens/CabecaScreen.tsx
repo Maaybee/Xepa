@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import * as cabecaApi from '@/services/api/cabeca';
 import type { Materia, MetodoMedia } from '@/types/api';
 import { useRequisicao } from '@/hooks/useRequisicao';
@@ -18,6 +19,7 @@ import { Secao } from '@/components/common/Secao';
 import { Aviso } from '@/components/ui/Aviso';
 import { Botao } from '@/components/ui/Botao';
 import { Campo } from '@/components/ui/Campo';
+import { BarrasCategoria } from '@/components/ui/BarrasCategoria';
 import { Cartao } from '@/components/ui/Cartao';
 import { EstadoVazio } from '@/components/ui/Estados';
 import { Selo } from '@/components/ui/Selo';
@@ -68,6 +70,25 @@ export function CabecaScreen() {
             </View>
           </View>
         </Cartao>
+      ) : null}
+
+      {/*
+        RF028 — onde o tempo foi. O `estudoPorMateria` já vinha no panorama e
+        estava sendo descartado pelo cliente.
+      */}
+      {panorama.dados && panorama.dados.estudoPorMateria.length > 0 ? (
+        <Secao titulo="Tempo por matéria">
+          <Cartao>
+            <BarrasCategoria
+              dados={panorama.dados.estudoPorMateria.map((linha) => ({
+                rotulo: linha.materia,
+                valor: linha.minutos,
+              }))}
+              formatar={duracao}
+              cor={ACENTO}
+            />
+          </Cartao>
+        </Secao>
       ) : null}
 
       <Secao
@@ -136,6 +157,7 @@ function CartaoMateria({
   aoRegistrarNota(dados: { descricao: string; valor: number; peso?: number; data: string }): Promise<void>;
   aoRegistrarSessao(minutos: number): Promise<void>;
 }) {
+  const router = useRouter();
   const [painel, setPainel] = useState<'nota' | 'sessao' | null>(null);
   const [descricao, setDescricao] = useState('');
   const [nota, setNota] = useState('');
@@ -185,6 +207,13 @@ function CartaoMateria({
           aparencia="texto"
           compacto
           aoTocar={() => setPainel((atual) => (atual === 'sessao' ? null : 'sessao'))}
+        />
+        {/* SD20 — a evolução exige a rota por matéria, então mora na tela de detalhe. */}
+        <Botao
+          titulo="Evolução"
+          aparencia="texto"
+          compacto
+          aoTocar={() => router.push({ pathname: '/materia/[id]', params: { id: materia.id } })}
         />
       </View>
 

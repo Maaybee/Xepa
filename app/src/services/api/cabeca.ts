@@ -1,6 +1,12 @@
 /** Módulo 4 — Cabeça (SD16–SD20). */
 
-import type { Avaliacao, Materia, MetodoMedia, Panorama } from '@/types/api';
+import type {
+  Avaliacao,
+  DesempenhoMateria,
+  Materia,
+  MetodoMedia,
+  Panorama,
+} from '@/types/api';
 import { requisitar } from './cliente';
 
 export function listarMaterias() {
@@ -47,6 +53,15 @@ export function registrarSessao(materiaId: number, data: string, duracaoMin: num
 /** RF026/RF028 — panorama de todas as matérias. */
 export function obterPanorama() {
   return requisitar<Panorama>('/cabeca/desempenho');
+}
+
+/**
+ * SD20 — desempenho de uma matéria só. É esta rota, e não a do panorama, que
+ * traz `progressao` (RF027): a série de notas com a média acumulada ponto a
+ * ponto, que é o que o gráfico de evolução desenha.
+ */
+export function obterDesempenho(materiaId: number) {
+  return requisitar<DesempenhoMateria>(`/cabeca/materias/${materiaId}/desempenho`);
 }
 
 /**

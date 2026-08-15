@@ -11,6 +11,7 @@
 
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useRouter } from 'expo-router';
 import * as granaApi from '@/services/api/grana';
 import type { Categoria, TipoTransacao } from '@/types/api';
 import { useRequisicao } from '@/hooks/useRequisicao';
@@ -21,6 +22,7 @@ import { Aviso } from '@/components/ui/Aviso';
 import { Barra } from '@/components/ui/Barra';
 import { Botao } from '@/components/ui/Botao';
 import { Campo } from '@/components/ui/Campo';
+import { BarrasCategoria } from '@/components/ui/BarrasCategoria';
 import { Cartao } from '@/components/ui/Cartao';
 import { EstadoVazio } from '@/components/ui/Estados';
 import { Selo } from '@/components/ui/Selo';
@@ -43,6 +45,7 @@ export function GranaScreen() {
   }, [mes]);
 
   const acao = useAcao();
+  const router = useRouter();
   const [lancamentoAberto, setLancamentoAberto] = useState(false);
 
   return (
@@ -60,7 +63,7 @@ export function GranaScreen() {
       {painel.dados ? (
         <>
           <Cartao acento={ACENTO}>
-            <Texto variante="secao" cor={cores.tintaFraca} maiusculas>
+            <Texto variante="corpo" cor={cores.tintaMedia}>
               Gasto no mês
             </Texto>
             <Texto variante="numeroGrande">{dinheiro(painel.dados.resumo.saidas)}</Texto>
@@ -79,6 +82,43 @@ export function GranaScreen() {
               </View>
             </View>
           </Cartao>
+
+          {/*
+            RF018 — para onde o dinheiro foi. O `gastosPorCategoria` já vinha na
+            resposta do resumo e estava sendo descartado pelo cliente.
+          */}
+          {painel.dados.resumo.gastosPorCategoria.length > 0 ? (
+            <Secao titulo="Para onde foi">
+              <Cartao>
+                <BarrasCategoria
+                  dados={painel.dados.resumo.gastosPorCategoria.map((linha) => ({
+                    rotulo: linha.categoria?.nome ?? 'Sem categoria',
+                    valor: linha.total,
+                  }))}
+                  formatar={dinheiro}
+                  cor={ACENTO}
+                />
+              </Cartao>
+            </Secao>
+          ) : null}
+
+          {/*
+            RF034 — Open Finance. Fica antes do lançamento manual de propósito:
+            conectar o banco é o que evita digitar lançamento a lançamento.
+          */}
+          <Secao
+            titulo="Bancos"
+            aoVerTudo={() => router.push('/bancos')}
+            rotuloVerTudo="Conectar"
+          >
+            <Cartao aoTocar={() => router.push('/bancos')}>
+              <Texto variante="cartaoNome">Conectar pelo Open Finance</Texto>
+              <Texto variante="corpo" cor={cores.tintaMedia}>
+                Traz o extrato sozinho. O Xepa não guarda a senha do banco, e você revoga quando
+                quiser.
+              </Texto>
+            </Cartao>
+          </Secao>
 
           <Secao
             titulo="Lançar"
@@ -242,7 +282,7 @@ function FormularioLancamento({
               <Texto
                 key={categoria.id}
                 variante="legenda"
-                cor={escolhida ? cores.papel : cores.tintaMedia}
+                cor={escolhida ? cores.fundo : cores.tintaMedia}
                 onPress={() => setCategoriaId(escolhida ? null : categoria.id)}
                 estilo={[
                   estilos.chip,

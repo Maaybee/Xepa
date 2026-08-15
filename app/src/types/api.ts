@@ -58,7 +58,7 @@ export interface ResultadoConsumo {
 // ---------- Grana ----------
 
 export type TipoTransacao = 'entrada' | 'saida';
-export type OrigemTransacao = 'automatica' | 'manual' | 'nota';
+export type OrigemTransacao = 'automatica' | 'manual' | 'nota' | 'open_finance';
 
 export interface Conta {
   id: number;
@@ -170,6 +170,27 @@ export interface Panorama {
   estudoPorMateria: Array<{ materia: string; minutos: number; sessoes: number }>;
 }
 
+export type Tendencia = 'subindo' | 'caindo' | 'estavel' | 'indefinida';
+
+/** RF027 — a série que o backend já calcula para a evolução de notas. */
+export interface Progressao {
+  /** Cada avaliação em ordem cronológica, com a média até aquele ponto. */
+  pontos: Array<{ data: string; descricao: string; valor: number; mediaAcumulada: number }>;
+  primeira: number | null;
+  ultima: number | null;
+  variacao: number | null;
+  tendencia: Tendencia;
+}
+
+/** SD20 — desempenho de uma matéria (RF026, RF027, RF028). */
+export interface DesempenhoMateria {
+  materia: { id: number; nome: string; metodoMedia: MetodoMedia };
+  media: number | null;
+  avaliacoes: Avaliacao[];
+  progressao: Progressao;
+  estudo: EstatisticasEstudo;
+}
+
 // ---------- Roupa ----------
 
 export type StatusLavagem = 'agendada' | 'concluida' | 'cancelada';
@@ -210,4 +231,63 @@ export interface AlertaLavanderia {
   }>;
   faltando: string[];
   mensagem: string | null;
+}
+
+// ---------- Open Finance (RF034–RF037) ----------
+
+export type StatusConsentimento = 'pendente' | 'ativo' | 'expirado' | 'revogado';
+
+export interface InstituicaoOpenFinance {
+  id: string;
+  nome: string;
+}
+
+export interface ContaConectada {
+  id: number;
+  id_externo: string;
+  nome_banco: string;
+  tipo: string;
+}
+
+export interface ConexaoOpenFinance {
+  id: number;
+  instituicao: string;
+  /** RF037 — o que foi consentido, visível para o usuário. */
+  escopo: string;
+  status: StatusConsentimento;
+  expiraEm: string;
+  revogadoEm: string | null;
+  contas: ContaConectada[];
+}
+
+/** RN19/RN20 — o que a sincronização fez. */
+export interface ResumoDaSincronizacao {
+  importadas: number;
+  conciliadas: number;
+  ignoradas: number;
+}
+
+// ---------- Nota fiscal (RF008, RN22) ----------
+
+export interface ItemDaNota {
+  descricao: string;
+  quantidade: number;
+  valorUnitario: number;
+}
+
+export interface NotaLida {
+  chaveAcesso: string;
+  localCompra: string | null;
+  dataCompra: string;
+  itens: ItemDaNota[];
+}
+
+export interface ResultadoDaNota {
+  notaFiscalId: number;
+  transacaoId: number;
+  /** RN18 — o total entra como gasto na categoria "Mercado". */
+  gasto: number;
+  itens: Array<{ descricao: string; quantidade: number; produto: Produto }>;
+  /** Itens que saíram do alerta de reposição por causa desta nota (RN08). */
+  alertasResolvidos: string[];
 }
