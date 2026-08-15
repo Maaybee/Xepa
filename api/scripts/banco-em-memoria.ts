@@ -16,7 +16,7 @@
  * que ele repete a superfície pública de `db/pool.ts`.
  */
 
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PGlite } from '@electric-sql/pglite';
@@ -105,8 +105,14 @@ async function prepararSchema(): Promise<void> {
   const { rows } = await db.query<{ nome: string }>('SELECT nome FROM schema_migrations');
   const aplicadas = new Set(rows.map((linha) => linha.nome));
 
-  // Uma migration só; se surgirem outras, este runner acompanha a lista.
-  for (const arquivo of ['001_schema_inicial.sql']) {
+  // Lê o diretório em ordem, como `src/db/migrate.ts`. Uma lista fixa aqui faz
+  // o modo sem Postgres rodar contra um schema mais velho que o do sistema, e
+  // a migration nova só aparece quebrada em tempo de execução.
+  const arquivos = (await readdir(join(raiz, 'src', 'db', 'migrations')))
+    .filter((nome) => nome.endsWith('.sql'))
+    .sort();
+
+  for (const arquivo of arquivos) {
     if (aplicadas.has(arquivo)) continue;
     await db.exec(await ler(join('migrations', arquivo)));
     await db.query('INSERT INTO schema_migrations (nome) VALUES ($1)', [arquivo]);

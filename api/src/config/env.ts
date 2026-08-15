@@ -8,6 +8,14 @@ function required(name: string): string {
   return value;
 }
 
+function bool(name: string, fallback: boolean): boolean {
+  const raw = process.env[name]?.trim().toLowerCase();
+  if (!raw) return fallback;
+  if (['1', 'true', 'sim', 'on'].includes(raw)) return true;
+  if (['0', 'false', 'nao', 'não', 'off'].includes(raw)) return false;
+  throw new Error(`Variável de ambiente ${name} deve ser true ou false`);
+}
+
 function num(name: string, fallback: number): number {
   const raw = process.env[name];
   if (!raw) return fallback;
@@ -24,6 +32,16 @@ export const env = {
   databaseUrl: required('DATABASE_URL'),
   /** Conexões simultâneas no pool. */
   dbPoolMax: num('DB_POOL_MAX', 10),
+
+  /**
+   * Conexão TLS com o banco.
+   *
+   * Postgres gerenciado (Neon, Supabase, Railway, Aiven…) **exige** TLS, e é
+   * comum apontar para um deles ainda em desenvolvimento. Por isso o SSL é uma
+   * variável própria: sem ela, ligar TLS obrigaria a mentir o `NODE_ENV`.
+   * Vazio mantém o padrão antigo — ligado em produção, desligado fora dela.
+   */
+  dbSsl: bool('DB_SSL', process.env.NODE_ENV === 'production'),
 
   /** RNF09 — a sessão expira após 30 minutos de inatividade. */
   sessionTtlMinutes: num('SESSION_TTL_MINUTES', 30),

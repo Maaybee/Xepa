@@ -1,5 +1,5 @@
 import pg from 'pg';
-import { env, isProduction } from '../config/env.js';
+import { env } from '../config/env.js';
 
 /**
  * `DECIMAL`/`NUMERIC` chega do driver como string para não perder precisão.
@@ -16,7 +16,9 @@ export const pool = new pg.Pool({
   connectionString: env.databaseUrl,
   max: env.dbPoolMax,
   idleTimeoutMillis: 30_000,
-  ...(isProduction ? { ssl: { rejectUnauthorized: false } } : {}),
+  // `rejectUnauthorized: false` aceita o certificado do provedor sem exigir a
+  // CA local — é o que os Postgres gerenciados esperam de um cliente comum.
+  ...(env.dbSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 });
 
 pool.on('error', (error) => {
