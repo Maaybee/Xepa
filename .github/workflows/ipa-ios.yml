@@ -36,6 +36,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # O Xcode padrão da imagem trazia Swift tools 6.1, e um pacote do Expo
+      # SDK 57 exige 6.2 — o build morria em "Could not resolve package
+      # dependencies". Escolhe o mais novo instalado em vez de fixar versão,
+      # que envelheceria a cada troca de imagem.
+      - name: Selecionar o Xcode mais novo
+        run: |
+          set -euo pipefail
+          echo "Xcodes disponíveis:"
+          ls -d /Applications/Xcode*.app
+          novo=$(ls -d /Applications/Xcode*.app | sort -V | tail -1)
+          echo "escolhido: $novo"
+          sudo xcode-select -s "$novo"
+          xcodebuild -version
+          swift --version
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -79,11 +94,13 @@ jobs:
         # e leva o xcodebuild junto — um erro que não parece de build.
         run: |
           set -o pipefail
+          # Sem `-sdk iphoneos`: junto com `-destination` ele produz
+          # `undefined_arch` nas fases de script, porque as duas opções
+          # disputam quem define a arquitetura. O destination sozinho basta.
           xcodebuild build \
             -workspace "$SCHEME.xcworkspace" \
             -scheme "$SCHEME" \
             -configuration Release \
-            -sdk iphoneos \
             -destination 'generic/platform=iOS' \
             -derivedDataPath "$RUNNER_TEMP/derivedData" \
             CODE_SIGNING_ALLOWED=NO \
