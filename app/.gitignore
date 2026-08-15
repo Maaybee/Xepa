@@ -4,3 +4,7 @@
 
 expo-env.d.ts
 # @end expo-cli
+# Projetos nativos gerados por `expo prebuild` (CNG). São derivados de
+# app.json + plugins e o workflow de IPA os regenera do zero a cada build.
+/ios
+/android

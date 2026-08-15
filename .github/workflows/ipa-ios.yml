@@ -1,0 +1,106 @@
+# Gera um .ipa **sem assinatura** do cliente, para instalação pessoal.
+#
+# Por que sem assinatura: a Apple permite instalar o próprio app no próprio
+# aparelho com um Apple ID gratuito ("Personal Team"), mas quem assina nesse
+# fluxo é o Sideloadly/AltStore, já no Windows. O EAS Build não serve aqui —
+# ele exige certificado de distribuição, que só existe em conta paga.
+#
+# Nenhuma credencial da Apple passa por este workflow. O runner só compila; a
+# assinatura acontece na sua máquina, com o seu Apple ID.
+#
+# Depois de rodar: baixe o artifact, abra o Sideloadly, arraste o .ipa, entre
+# com o Apple ID e instale. O certificado gratuito vale 7 dias — o AltStore
+# renova sozinho enquanto o PC e o iPhone estiverem na mesma rede.
+
+name: IPA iOS (sem assinatura)
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: >-
+          Endereço da API que vai ficar embutido no app. Precisa ser alcançável
+          pelo iPhone — o IP da máquina na rede local (http://192.168.x.x:3333/api)
+          ou a URL pública, se a API já estiver publicada.
+        required: true
+        default: http://10.254.18.142:3333/api
+
+jobs:
+  build:
+    # Runner macOS: obrigatório para compilar iOS. Em repositório público não
+    # consome cota; em privado, cada minuto conta 10× — por isso o gatilho é
+    # manual, e não a cada push.
+    runs-on: macos-15
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Instalar dependências
+        working-directory: app
+        run: npm ci
+
+      - name: Gerar o projeto iOS nativo
+        working-directory: app
+        env:
+          # Entra no bundle em tempo de build. Sem isso o cliente cai no padrão
+          # `http://localhost:3333/api`, que no iPhone é o próprio telefone: o
+          # app abriria e nunca carregaria dado nenhum.
+          EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+        run: npx expo prebuild --platform ios --clean
+
+      - name: Descobrir o nome do scheme
+        id: scheme
+        working-directory: app/ios
+        # O nome sai do `name` do app.json e pode mudar; ler do disco evita um
+        # workflow que quebra em silêncio quando alguém renomeia o app.
+        run: |
+          scheme=$(ls -d *.xcworkspace | head -1 | sed 's/\.xcworkspace$//')
+          echo "nome=$scheme" >> "$GITHUB_OUTPUT"
+          echo "scheme: $scheme"
+
+      - name: Compilar sem assinar
+        working-directory: app/ios
+        env:
+          SCHEME: ${{ steps.scheme.outputs.nome }}
+          EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+        run: |
+          xcodebuild archive \
+            -workspace "$SCHEME.xcworkspace" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/$SCHEME.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGN_ENTITLEMENTS="" \
+            EXPANDED_CODE_SIGN_IDENTITY="" \
+            | xcpretty || exit "${PIPESTATUS[0]}"
+
+      - name: Empacotar como .ipa
+        env:
+          SCHEME: ${{ steps.scheme.outputs.nome }}
+        # Um .ipa é só um zip com o .app dentro de uma pasta `Payload/`. Como o
+        # binário não está assinado, não dá para usar `xcodebuild -exportArchive`
+        # (ele exige um perfil) — daí o empacotamento à mão.
+        run: |
+          cd "$RUNNER_TEMP"
+          mkdir -p Payload
+          cp -R "$SCHEME.xcarchive/Products/Applications/$SCHEME.app" Payload/
+          zip -qry "$SCHEME-sem-assinatura.ipa" Payload
+          ls -lh "$SCHEME-sem-assinatura.ipa"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xepa-ipa-sem-assinatura
+          path: ${{ runner.temp }}/*.ipa
+          retention-days: 14
+          if-no-files-found: error
