@@ -70,33 +70,54 @@ jobs:
         env:
           SCHEME: ${{ steps.scheme.outputs.nome }}
           EXPO_PUBLIC_API_URL: ${{ inputs.api_url }}
+        # `build` e não `archive`: com a assinatura desligada o archive nem
+        # sempre monta a estrutura Products/Applications, e foi exatamente aí
+        # que a primeira execução quebrou. O `build` deposita o .app no
+        # derivedData, que é previsível.
+        #
+        # Sem `| xcpretty`: ele pode não existir no runner, e aí o cano quebra
+        # e leva o xcodebuild junto — um erro que não parece de build.
         run: |
-          xcodebuild archive \
+          set -o pipefail
+          xcodebuild build \
             -workspace "$SCHEME.xcworkspace" \
             -scheme "$SCHEME" \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
-            -archivePath "$RUNNER_TEMP/$SCHEME.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/derivedData" \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGN_ENTITLEMENTS="" \
-            EXPANDED_CODE_SIGN_IDENTITY="" \
-            | xcpretty || exit "${PIPESTATUS[0]}"
+            EXPANDED_CODE_SIGN_IDENTITY=""
 
       - name: Empacotar como .ipa
-        env:
-          SCHEME: ${{ steps.scheme.outputs.nome }}
         # Um .ipa é só um zip com o .app dentro de uma pasta `Payload/`. Como o
         # binário não está assinado, não dá para usar `xcodebuild -exportArchive`
         # (ele exige um perfil) — daí o empacotamento à mão.
+        #
+        # O .app é localizado por busca, não por caminho montado: o nome do
+        # produto nem sempre é o do scheme, e supor isso foi o que falhou antes.
         run: |
+          set -euo pipefail
+          produtos="$RUNNER_TEMP/derivedData/Build/Products"
+
+          app=$(find "$produtos" -maxdepth 3 -type d -name '*.app' | head -1)
+          if [ -z "$app" ]; then
+            echo "Nenhum .app encontrado. Conteúdo de $produtos:"
+            find "$produtos" -maxdepth 3 || echo "(a pasta nem existe)"
+            exit 1
+          fi
+          echo "encontrado: $app"
+
+          rm -rf "$RUNNER_TEMP/Payload"
+          mkdir -p "$RUNNER_TEMP/Payload"
+          cp -R "$app" "$RUNNER_TEMP/Payload/"
+
           cd "$RUNNER_TEMP"
-          mkdir -p Payload
-          cp -R "$SCHEME.xcarchive/Products/Applications/$SCHEME.app" Payload/
-          zip -qry "$SCHEME-sem-assinatura.ipa" Payload
-          ls -lh "$SCHEME-sem-assinatura.ipa"
+          zip -qry xepa-sem-assinatura.ipa Payload
+          ls -lh xepa-sem-assinatura.ipa
 
       - uses: actions/upload-artifact@v4
         with:
