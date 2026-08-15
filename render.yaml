@@ -1,0 +1,48 @@
+# Publicação da API no Render (Blueprint).
+#
+# Com este arquivo no repositório, o Render lê tudo daqui: em vez de preencher
+# o formulário na mão, use New → Blueprint e aponte para o repo.
+#
+# O banco não entra aqui de propósito: o Postgres é o Supabase, que já existe.
+# Só a API sobe.
+
+services:
+  - type: web
+    name: xepa-api
+    runtime: node
+    # O repositório tem app/ e api/ lado a lado — sem isto o Render tentaria
+    # buildar a raiz e não acharia package.json.
+    rootDir: api
+    plan: free
+    region: oregon
+
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+
+    # A rota já existe e também toca o banco, então um deploy que sobe sem
+    # conseguir falar com o Supabase é reprovado aqui, e não pelo usuário.
+    healthCheckPath: /api/saude
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # Obrigatória e secreta: `sync: false` faz o Render pedir o valor no
+      # painel em vez de guardá-lo no repositório.
+      #
+      # Use a string do **pooler** do Supabase (porta 6543), com usuário
+      # postgres.SEU_REF. A conexão direta é IPv6-only e não serve.
+      - key: DATABASE_URL
+        sync: false
+
+      # O Supabase exige TLS. Em produção o padrão já seria ligado, mas deixar
+      # explícito evita que mudar o NODE_ENV desligue a criptografia sem querer.
+      - key: DB_SSL
+        value: 'true'
+
+      # Atrás do pooler quem multiplexa é ele; o plano free do Render é
+      # pequeno e não precisa segurar muitas conexões.
+      - key: DB_POOL_MAX
+        value: '5'
+
+      # PORT não é declarada: o Render injeta a dele, e `env.ts` já lê de lá.
