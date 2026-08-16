@@ -136,9 +136,9 @@ const consultaSchema = z.object({
  * pedido, são o caso previsto em que o app segue no preenchimento manual.
  */
 export async function consultarNota(req: Request, res: Response) {
-  usuarioAutenticado(req);
+  const { id } = usuarioAutenticado(req);
   const { conteudoQr, chaveAcesso } = consultaSchema.parse(req.body);
-  res.status(200).json(await notaFiscalService.consultar(conteudoQr, chaveAcesso));
+  res.status(200).json(await notaFiscalService.consultar(id, conteudoQr, chaveAcesso));
 }
 
 /** SD06 — POST /api/despensa/notas */

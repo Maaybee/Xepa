@@ -13,8 +13,10 @@
  * mais em `notaFiscal/`, e mais nada.
  */
 
-import type { NotaConsultada, ProvedorNotaFiscal } from './notaFiscal/provedor.js';
+import type { ItemConsultado, NotaConsultada, ProvedorNotaFiscal } from './notaFiscal/provedor.js';
 import { ProvedorSefazSp } from './notaFiscal/sefazSp.js';
+import { sugerirProduto, type Sugestao } from './notaFiscal/similaridade.js';
+import * as produtoRepository from '../repositories/produtoRepository.js';
 import { badRequest } from '../utils/errors.js';
 
 /**
@@ -23,11 +25,26 @@ import { badRequest } from '../utils/errors.js';
  */
 const PROVEDORES: ProvedorNotaFiscal[] = [new ProvedorSefazSp()];
 
+/** Item da nota já confrontado com a despensa de quem leu. */
+export interface ItemSugerido extends ItemConsultado {
+  /**
+   * O produto que já existe e provavelmente é este (RN22).
+   *
+   * `null` significa "não sei", nunca "é novo": quem decide é o usuário, na
+   * conferência. O nome sugerido só entra no estoque se ele confirmar.
+   */
+  sugestao: Sugestao | null;
+}
+
+export interface NotaSugerida extends Omit<NotaConsultada, 'itens'> {
+  itens: ItemSugerido[];
+}
+
 export interface ResultadoDaConsulta {
   /** `false` quando não deu: o app pede os itens ao usuário. */
   consultada: boolean;
   chaveAcesso: string;
-  nota: NotaConsultada | null;
+  nota: NotaSugerida | null;
   /** Por que não deu — texto para o usuário, não código de erro. */
   motivo: string | null;
 }
@@ -49,6 +66,7 @@ export function provedorPara(chaveAcesso: string): ProvedorNotaFiscal | null {
  * que o portal exige; a chave sozinha cairia na consulta com captcha.
  */
 export async function consultar(
+  usuarioId: number,
   conteudoQr: string,
   chaveAcesso: string,
 ): Promise<ResultadoDaConsulta> {
@@ -76,5 +94,34 @@ export async function consultar(
     };
   }
 
-  return { consultada: true, chaveAcesso, nota, motivo: null };
+  return {
+    consultada: true,
+    chaveAcesso,
+    nota: { ...nota, itens: await casarComADespensa(usuarioId, nota.itens) },
+    motivo: null,
+  };
+}
+
+/**
+ * Aponta, para cada item da nota, o produto que já está na despensa (RN22).
+ *
+ * O PDV trunca a descrição e a conciliação do estoque é por nome exato, então
+ * sem isto a mesma compra semanal criaria "MAION HELLMANNS 500G TRA" ao lado da
+ * "maionese" que já existe — e o alerta de reposição (RN08) ficaria olhando
+ * para o produto errado.
+ *
+ * Uma consulta só ao banco: a despensa de um estudante cabe folgado em memória,
+ * e uma busca por item multiplicaria a ida ao banco pelo tamanho da nota.
+ */
+async function casarComADespensa(
+  usuarioId: number,
+  itens: ItemConsultado[],
+): Promise<ItemSugerido[]> {
+  const produtos = await produtoRepository.listarPorUsuario(usuarioId);
+  const conhecidos = produtos.map((produto) => ({ id: produto.id, nome: produto.nome }));
+
+  return itens.map((item) => ({
+    ...item,
+    sugestao: sugerirProduto(item.descricao, conhecidos),
+  }));
 }
