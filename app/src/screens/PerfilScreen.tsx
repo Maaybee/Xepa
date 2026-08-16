@@ -56,6 +56,7 @@ export function PerfilScreen() {
       aoRecarregar={apoio.recarregar}
       dentroDasAbas={false}
     >
+      saida="fechar"
       {acao.erro ? <Aviso mensagem={acao.erro} tom="erro" /> : null}
 
       <View style={estilos.identidade}>
