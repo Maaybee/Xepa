@@ -282,11 +282,20 @@ export interface NotaLida {
   itens: ItemDaNota[];
 }
 
+/** O produto da despensa que a descrição truncada da nota provavelmente é. */
+export interface SugestaoDeProduto {
+  produtoId: number;
+  nome: string;
+  confianca: number;
+}
+
 export interface ItemConsultado {
   descricao: string;
   quantidade: number;
   unidade: string | null;
   valorUnitario: number;
+  /** `null` é "não sei", não "é novo" — quem decide é o usuário (RN22). */
+  sugestao: SugestaoDeProduto | null;
 }
 
 export interface NotaConsultada {

@@ -41,6 +41,14 @@ interface ItemDaNota {
   descricao: string;
   quantidade: string;
   valorUnitario: string;
+  /**
+   * A descrição como o mercado imprimiu, quando o campo foi trocado pelo nome
+   * de um produto que já existe na despensa.
+   *
+   * Guardada para poder ser mostrada e devolvida: o casamento é palpite, e o
+   * usuário precisa ver o que foi trocado para discordar.
+   */
+  descricaoOriginal?: string | undefined;
 }
 
 const ITEM_VAZIO: ItemDaNota = { descricao: '', quantidade: '1', valorUnitario: '' };
@@ -80,7 +88,11 @@ export function NotaScreen() {
       if (resultado.consultada && encontrados.length > 0) {
         setItens(
           encontrados.map((item) => ({
-            descricao: item.descricao,
+            // O nome da despensa entra no campo quando existe: é ele que faz a
+            // conciliação do estoque encontrar o produto de sempre em vez de
+            // criar mais um. A descrição da nota fica guardada ao lado.
+            descricao: item.sugestao?.nome ?? item.descricao,
+            ...(item.sugestao ? { descricaoOriginal: item.descricao } : {}),
             quantidade: String(item.quantidade).replace('.', ','),
             valorUnitario: item.valorUnitario.toFixed(2).replace('.', ','),
           })),
@@ -120,6 +132,9 @@ export function NotaScreen() {
     }
     void usarLeitura(leitura);
   }
+
+  /** Quantos itens já casaram com um produto que existe (RN22). */
+  const reconhecidos = itens.filter((item) => item.descricaoOriginal).length;
 
   const itensValidos = itens
     .map((item) => ({
@@ -209,7 +224,9 @@ export function NotaScreen() {
             */}
             <Texto variante="corpo" cor={cores.tintaMedia}>
               {origemDosItens === 'sefaz'
-                ? `${itens.length} item(ns) vieram da nota. Confira e ajuste o que for preciso — o mercado nem sempre nomeia como você.`
+                ? `${itens.length} item(ns) vieram da nota${
+                    reconhecidos > 0 ? `, ${reconhecidos} já reconhecido(s) da sua despensa` : ''
+                  }. Confira e ajuste o que for preciso.`
                 : 'O QR Code identifica a nota, mas não lista os produtos. Informe o que entrou na despensa.'}
             </Texto>
 
@@ -221,6 +238,30 @@ export function NotaScreen() {
                   onChangeText={(texto) => atualizarItem(setItens, indice, { descricao: texto })}
                   placeholder="Arroz"
                 />
+                {/*
+                  O casamento com a despensa é palpite, então aparece: some o
+                  nome que veio impresso e o caminho de volta. Trocar calado
+                  faria o usuário lançar um item que ele não reconhece na nota.
+                */}
+                {item.descricaoOriginal ? (
+                  <View style={estilos.casamento}>
+                    <Feather name="corner-down-right" size={14} color={cores.tintaFraca} />
+                    <Texto variante="legenda" cor={cores.tintaMedia} estilo={estilos.deQuem}>
+                      na nota: {item.descricaoOriginal}
+                    </Texto>
+                    <Botao
+                      titulo="usar este"
+                      aparencia="texto"
+                      compacto
+                      aoTocar={() =>
+                        atualizarItem(setItens, indice, {
+                          descricao: item.descricaoOriginal ?? '',
+                          descricaoOriginal: undefined,
+                        })
+                      }
+                    />
+                  </View>
+                ) : null}
                 <View style={estilos.duasColunas}>
                   <View style={estilos.metade}>
                     <Campo
@@ -424,6 +465,15 @@ const estilos = StyleSheet.create({
   },
   pressionado: {
     opacity: 0.7,
+  },
+  casamento: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: espaco.xs,
+    marginTop: -espaco.xs,
+  },
+  deQuem: {
+    flex: 1,
   },
   duasColunas: {
     flexDirection: 'row',
