@@ -1,0 +1,9 @@
+{
+  "//": "Os testes do app rodam no Node, não no React Native — precisam de `node:test` e `node:assert`. Os tipos do Node ficam só aqui, e não no tsconfig principal, para que o código do app não passe a enxergar `fs`, `process` e afins, que não existem no aparelho.",
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"],
+    "noEmit": true
+  },
+  "include": ["src/**/*.test.ts", "src/**/*.ts"]
+}
