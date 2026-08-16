@@ -26,7 +26,7 @@ Aplicação voltada a estudantes universitários que estão lidando pela primeir
 
 | ID | Descrição |
 |----|-----------|
-| RF008 | O sistema deve permitir que o usuário adicione itens ao estoque por leitura do QR Code da nota fiscal. O QR identifica a nota (chave de acesso de 44 dígitos); os itens são conferidos pelo usuário antes de entrar no estoque — ver RN22. |
+| RF008 | O sistema deve permitir que o usuário adicione itens ao estoque por leitura do QR Code da nota fiscal. O QR identifica a nota (chave de acesso de 44 dígitos) e destrava a busca dos itens na consulta pública da SEFAZ; os itens são conferidos pelo usuário antes de entrar no estoque, e informados por ele quando a consulta não estiver disponível — ver RN22. |
 | RF009 | O sistema deve permitir que o usuário adicione e edite itens manualmente. |
 | RF010 | O sistema deve permitir que o usuário registre o consumo (baixa) de itens. |
 | RF011 | O sistema deve exibir a lista de itens em estoque com suas quantidades. |
@@ -99,7 +99,7 @@ Aplicação voltada a estudantes universitários que estão lidando pela primeir
 | RN19 | A sincronização de extrato é idempotente: uma movimentação já importada, identificada pelo seu id na instituição, nunca gera uma segunda transação — sincronizar de novo não muda o gasto do mês. |
 | RN20 | Uma compra que chega pela nota fiscal (RF016) e pelo extrato (RF035) é **um** gasto, não dois. Ao sincronizar, uma movimentação de saída que case com uma transação de origem "nota" ainda não conciliada — mesmo usuário, mesmo valor e data dentro de 3 dias — concilia com ela em vez de criar outra. O casamento não exige conta igual: a transação de nota nasce sem conta, porque o QR Code não informa o meio de pagamento; a conciliação é justamente o que descobre por qual conta a compra foi paga. Sem esta regra o gasto do mês (RN11) conta o mesmo dinheiro duas vezes. |
 | RN21 | O consentimento tem escopo e prazo: expira no máximo em 12 meses e pode ser revogado pelo usuário a qualquer momento. Consentimento expirado ou revogado não sincroniza, e revogar não apaga as transações já importadas — elas são histórico financeiro do usuário. |
-| RN22 | O QR Code da NFC-e identifica a nota, não o seu conteúdo: ele carrega uma URL do portal da SEFAZ com a chave de acesso e parâmetros de validação, sem descrição, quantidade ou valor dos produtos. A leitura (RF008) extrai a chave; os itens são informados ou conferidos pelo usuário antes de entrarem no estoque. Obter os itens automaticamente exigiria consultar o portal da SEFAZ, que varia por estado, e não faz parte deste escopo. |
+| RN22 | O QR Code da NFC-e identifica a nota, não o seu conteúdo: ele carrega uma URL do portal da SEFAZ com a chave de acesso e um hash de validação, sem descrição, quantidade ou valor dos produtos. Os itens são obtidos na consulta pública da SEFAZ, que o sistema faz com o conteúdo **completo** do QR — o hash é o que dispensa o captcha; a chave avulsa cai na consulta protegida. O portal varia por estado, então a consulta é por UF (dois primeiros dígitos da chave) e existe onde houver implementação. A consulta é **tentativa, não etapa**: falha de portal, layout alterado, UF sem suporte ou chave digitada à mão levam ao preenchimento manual, que permanece sempre disponível. Em qualquer dos casos o usuário confere os itens antes de entrarem no estoque — o que o mercado registra na nota nem sempre é como ele nomeia o item na despensa. |
 
 ---
 

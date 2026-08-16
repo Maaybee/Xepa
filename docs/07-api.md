@@ -186,6 +186,29 @@ O que precisa de reposição agora. É também o que o alerta de lavanderia (RF0
 
 - `200` → `{ "produtos": [ … ] }`
 
+### `POST /api/despensa/notas/consultar` — SD06 (RF008, RN22)
+
+Busca os itens da nota na consulta pública da SEFAZ, para adiantar o preenchimento. Não grava nada.
+
+Corpo:
+
+```json
+{
+  "conteudoQr": "https://www.nfce.fazenda.sp.gov.br/qrcode?p=3526…|2|1|1|<hash>",
+  "chaveAcesso": "44 dígitos"
+}
+```
+
+`conteudoQr` é o conteúdo **cru** do QR Code, não a chave: é o hash dentro da URL que destrava a consulta sem captcha. Chave digitada à mão não tem hash, e para essa nota a resposta vem sempre com `consultada: false`.
+
+- `200` → `{ "consultada": true, "chaveAcesso", "nota": { "localCompra", "dataCompra", "valorTotal", "itens": [ { "descricao", "quantidade", "unidade", "valorUnitario" } ] }, "motivo": null }`
+- `200` → `{ "consultada": false, "nota": null, "motivo": "texto para o usuário" }` — portal fora do ar, layout mudado, hash recusado ou UF sem provedor
+- `400` chave fora do formato
+
+**Falha do portal responde `200`, não `5xx`**: não conseguir consultar é caso previsto, não erro do pedido. O cliente cai no preenchimento manual, que nunca sai de cena. O provedor é escolhido pela UF (dois primeiros dígitos da chave) em `services/notaFiscalService.ts`; hoje só **35 (SP)** tem implementação, em `services/notaFiscal/sefazSp.ts`. Somar um estado é somar um arquivo e uma linha na lista.
+
+O domínio consultado é sempre o da SEFAZ: só a query do QR é aproveitada, nunca o host lido — seguir o endereço do código faria um QR forjado apontar a consulta do servidor para onde quisesse.
+
 ### `POST /api/despensa/notas` — SD06 (RF008, RF016, RN06, RN18)
 
 Corpo:

@@ -26,6 +26,7 @@ Home = "a banca"; resumo mensal = "a sacola". Identidade visual: lilás (`#9B7ED
 ## Decisões e restrições-chave
 - **iOS primeiro + notificações bancárias**: a leitura automática de movimentação (RF015) é restrita no iOS (RNF13). No lançamento iOS a automação bancária não funciona — o financeiro se apoia no **registro manual (RF017)**; a automação entra com o Android.
 - **QR Code só para notas de mercado (RN18)**: toda transação gerada por nota nasce categorizada como "Mercado". Simplifica a categorização.
+- **Os itens da nota vêm da SEFAZ, não do QR (RN22)**: o QR carrega chave + hash; os produtos estão na consulta pública, e é o hash que a destrava sem captcha — por isso o app guarda a **URL inteira** lida, não só os 44 dígitos. A consulta é tentativa: `consultada: false` cai no preenchimento manual, que nunca sai de cena. Provedor por UF em `api/src/services/notaFiscal/`; só SP (35) implementado.
 - **Orçamento por categoria, não teto único (RF020, RN17)**: o usuário define um limite por categoria/mês (ex.: R$ 300 mercado, R$ 200 lazer); no máximo um orçamento por categoria por mês.
 - **Alerta de estoque configurável por item (RF012, RN08)**: o usuário escolhe quais itens monitorar e a quantidade mínima de cada.
 - **Nota → 1 transação (evita dupla contagem)**: uma nota processada gera exatamente uma `TRANSACAO` (origem="nota"); a relação `NOTA_FISCAL`–`TRANSACAO` é 1:1. O gasto do mês (RN11) sai só de `TRANSACAO`.
@@ -135,7 +136,8 @@ Para desenvolver contra a API local, troque `EXPO_PUBLIC_API_URL` e **reinicie o
 - Gráficos: gasto por categoria (RF018) e tempo por matéria (RF028) em `BarrasCategoria`; evolução de notas (RF027) em `LinhaEvolucao`, na tela de detalhe da matéria (`app/materia/[id]`, SD20). Usam `react-native-svg`.
 
 **A fazer**
-- Cliente: leitor de QR Code da nota (RF008), notificações locais de lembrete (RF032), tela de detalhe por item da despensa, testes do app.
+- Validar o parser da SEFAZ-SP contra uma nota real: os testes rodam sobre HTML de apoio, e ninguém conferiu ainda o HTML que o portal devolve hoje.
+- Cliente: notificações locais de lembrete (RF032), tela de detalhe por item da despensa, testes do app.
 - Personas e user stories; wireframes/UX.
 
 ## Cor em gráfico
