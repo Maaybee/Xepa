@@ -131,15 +131,26 @@ Para desenvolver contra a API local, troque `EXPO_PUBLIC_API_URL` e **reinicie o
 - Modelagem: requisitos (RF001–RF037, RN01–RN21, RNF01–RNF18), casos de uso (19), modelo de dados (19 entidades), 27 diagramas de sequência, arquitetura, brand kit.
 - Banco: DDL das 19 entidades com as constraints das RNs, runner de migrations e seeds (avatares, instituições).
 - API: **completa** — scaffold em camadas e os cinco módulos, cobrindo os 24 diagramas de sequência. Conta/Autenticação (SD01–SD05), Despensa (SD06–SD10), Grana (SD11–SD15), Cabeça (SD16–SD20) e Roupa (SD21–SD24).
-- Testes da API: 223 testes (unidade + integração ponta a ponta dos 5 módulos + Open Finance), rodando sem banco externo.
+- Testes da API: 253 testes (unidade + integração ponta a ponta dos 5 módulos + Open Finance), rodando sem banco externo.
 - Open Finance (RF034–RF037, SD25–SD27): consentimento, importação de extrato com deduplicação e revogação, sobre um provedor **simulado** trocável.
 - Cliente: scaffold Expo SDK 57 + expo-router, tema lilás/azul, camada de API, sessão em SecureStore, telas de autenticação e as cinco telas de módulo consumindo a API.
 - Gráficos: gasto por categoria (RF018) e tempo por matéria (RF028) em `BarrasCategoria`; evolução de notas (RF027) em `LinhaEvolucao`, na tela de detalhe da matéria (`app/materia/[id]`, SD20). Usam `react-native-svg`.
 
 **A fazer**
-- Validar o parser da SEFAZ-SP contra uma nota real: os testes rodam sobre HTML de apoio, e ninguém conferiu ainda o HTML que o portal devolve hoje.
-- Cliente: notificações locais de lembrete (RF032), tela de detalhe por item da despensa, testes do app.
+- Cliente: notificações locais de lembrete (RF032), tela de detalhe por item da despensa. Testes do app: só `categoriaVisual` por enquanto.
 - Personas e user stories; wireframes/UX.
+
+## Fotos de produto: não existem, e não dá para buscar
+
+A nota fiscal identifica o produto pelo **código interno do mercado** (`Código: 39062`), não pelo GTIN — numa nota real de 50 itens, zero códigos de barras. Sem identificador global não há base para consultar foto, e metade de uma compra de verdade (fruta, verdura, carne a granel) não tem código de barras nem para escanear.
+
+Por isso o lugar da foto no cartão recebe **ícone de categoria** (`app/src/utils/categoriaVisual.ts`), inferido do **nome** e não do campo `categoria` — produto criado por nota nasce com `categoria: null`. O ícone é a identidade e a cor só reforça: dez categorias não cabem em dez cores separáveis sob daltonismo.
+
+## Testes do app
+
+`cd app && npm test` — mesmo runner da API (`node --test` + `tsx`), arquivos `src/**/*.test.ts`.
+
+Os tipos do Node ficam **só** em `tsconfig.test.json`; o `tsconfig.json` exclui `*.test.ts`. Sem essa separação o código do app passaria a enxergar `fs` e `process`, que não existem no aparelho.
 
 ## Cor em gráfico
 
