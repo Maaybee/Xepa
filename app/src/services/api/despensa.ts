@@ -1,6 +1,12 @@
 /** Módulo 2 — Despensa (SD06–SD10). */
 
-import type { NotaLida, Produto, ResultadoConsumo, ResultadoDaNota } from '@/types/api';
+import type {
+  NotaLida,
+  Produto,
+  ResultadoConsumo,
+  ResultadoDaConsulta,
+  ResultadoDaNota,
+} from '@/types/api';
 import { requisitar } from './cliente';
 
 export function listarEstoque() {
@@ -44,10 +50,24 @@ export function configurarAlerta(
 }
 
 /**
+ * SD06 — busca os itens da nota na consulta pública da SEFAZ (RN22).
+ *
+ * Manda o conteúdo cru do QR Code, não só a chave: é o hash dentro da URL que
+ * destrava a consulta sem captcha. Nunca falha por causa do portal — quando
+ * não dá, volta `consultada: false` e os itens são digitados.
+ */
+export function consultarNota(conteudoQr: string, chaveAcesso: string) {
+  return requisitar<ResultadoDaConsulta>('/despensa/notas/consultar', {
+    metodo: 'POST',
+    corpo: { conteudoQr, chaveAcesso },
+  });
+}
+
+/**
  * SD06 — leitura de nota fiscal (RF008, RN06, RN18).
  *
- * A chave vem do QR Code; os itens, do usuário (RN22). O servidor recusa nota
- * repetida pela chave e categoriza o gasto como "Mercado".
+ * A chave vem do QR Code; os itens vêm da consulta ou do usuário (RN22). O
+ * servidor recusa nota repetida pela chave e categoriza o gasto como "Mercado".
  */
 export function processarNota(nota: NotaLida) {
   return requisitar<ResultadoDaNota>('/despensa/notas', { metodo: 'POST', corpo: nota });

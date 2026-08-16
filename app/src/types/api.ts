@@ -282,6 +282,29 @@ export interface NotaLida {
   itens: ItemDaNota[];
 }
 
+export interface ItemConsultado {
+  descricao: string;
+  quantidade: number;
+  unidade: string | null;
+  valorUnitario: number;
+}
+
+export interface NotaConsultada {
+  chaveAcesso: string;
+  localCompra: string | null;
+  dataCompra: string | null;
+  valorTotal: number | null;
+  itens: ItemConsultado[];
+}
+
+/** RN22 — a consulta é uma tentativa: `consultada: false` cai no manual. */
+export interface ResultadoDaConsulta {
+  consultada: boolean;
+  chaveAcesso: string;
+  nota: NotaConsultada | null;
+  motivo: string | null;
+}
+
 export interface ResultadoDaNota {
   notaFiscalId: number;
   transacaoId: number;

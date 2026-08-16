@@ -24,6 +24,16 @@ export interface LeituraDeChave {
   chave: string;
   /** De onde a chave saiu — útil para explicar uma leitura que não deu certo. */
   formato: 'qr-v2' | 'qr-v1' | 'digitada';
+  /**
+   * O conteúdo cru que foi lido, guardado inteiro.
+   *
+   * Os 44 dígitos identificam a nota, mas é o resto da URL — o hash de
+   * validação — que destrava a consulta pública dos itens na SEFAZ sem
+   * captcha. Descartar a URL e guardar só a chave custaria a busca automática:
+   * o portal responde página vazia para chave avulsa. Quem digitou a chave à
+   * mão não tem hash, e para essa nota os itens seguem sendo digitados.
+   */
+  conteudo: string;
 }
 
 /**
@@ -39,7 +49,7 @@ export function extrairChaveDeAcesso(conteudo: string): LeituraDeChave | null {
   // Digitada: só dígitos, possivelmente separados por espaço ou ponto.
   const somenteDigitos = texto.replace(/[\s.-]/g, '');
   if (ehChave(somenteDigitos)) {
-    return { chave: somenteDigitos, formato: 'digitada' };
+    return { chave: somenteDigitos, formato: 'digitada', conteudo: somenteDigitos };
   }
 
   const parametros = parametrosDaUrl(texto);
@@ -48,12 +58,12 @@ export function extrairChaveDeAcesso(conteudo: string): LeituraDeChave | null {
   const p = parametros.get('p');
   if (p) {
     const chave = p.split('|')[0]?.trim() ?? '';
-    if (ehChave(chave)) return { chave, formato: 'qr-v2' };
+    if (ehChave(chave)) return { chave, formato: 'qr-v2', conteudo: texto };
   }
 
   // Versão 1.0 — `chNFe=<chave>`
   const chNFe = parametros.get('chnfe')?.trim() ?? '';
-  if (ehChave(chNFe)) return { chave: chNFe, formato: 'qr-v1' };
+  if (ehChave(chNFe)) return { chave: chNFe, formato: 'qr-v1', conteudo: texto };
 
   return null;
 }

@@ -3,11 +3,15 @@
  *
  * A tela tem dois passos porque a nota tem dois passos:
  *
- * 1. **Identificar a nota** — o QR Code dá a chave de acesso, e só ela. Quem
- *    não consegue apontar a câmera (nota amassada, pouca luz, aparelho sem
- *    foco) digita os 44 dígitos.
- * 2. **Conferir os itens** — RN22: os produtos não estão no QR Code, então é o
- *    usuário quem informa o que entrou na despensa.
+ * 1. **Identificar a nota** — o QR Code dá a chave de acesso e o hash de
+ *    validação. Quem não consegue apontar a câmera (nota amassada, pouca luz,
+ *    aparelho sem foco) digita os 44 dígitos.
+ * 2. **Conferir os itens** — RN22: os produtos não estão dentro do QR Code,
+ *    mas estão na consulta pública da SEFAZ, que o servidor tenta ler com o
+ *    hash da URL. Deu certo, os itens já vêm preenchidos e o usuário confere;
+ *    não deu (portal fora do ar, UF sem suporte, chave digitada sem hash), ele
+ *    preenche. A conferência existe nos dois casos — o que o portal devolve é
+ *    o que o mercado registrou, e nem sempre é o que se quer na despensa.
  *
  * O gasto nasce categorizado como "Mercado" (RN18) e a nota repetida é recusada
  * pela chave (RN06) — as duas regras são do servidor; aqui só se mostra o erro.
@@ -27,7 +31,7 @@ import { Botao } from '@/components/ui/Botao';
 import { Campo } from '@/components/ui/Campo';
 import { Cartao } from '@/components/ui/Cartao';
 import { Texto } from '@/components/ui/Texto';
-import { extrairChaveDeAcesso } from '@/utils/chaveDeAcesso';
+import { extrairChaveDeAcesso, type LeituraDeChave } from '@/utils/chaveDeAcesso';
 import { hoje } from '@/utils/formato';
 import { cores, espaco, raio } from '@/theme';
 
@@ -54,6 +58,49 @@ export function NotaScreen() {
   const [data, setData] = useState(hoje());
   const [itens, setItens] = useState<ItemDaNota[]>([{ ...ITEM_VAZIO }]);
 
+  const [consultando, setConsultando] = useState(false);
+  /** De onde vieram os itens na tela — muda o que se pede ao usuário. */
+  const [origemDosItens, setOrigemDosItens] = useState<'sefaz' | 'manual'>('manual');
+  const [avisoDaConsulta, setAvisoDaConsulta] = useState<string | null>(null);
+
+  /**
+   * Passo 1 → 2. A consulta é tentada aqui e não no envio: preencher depois de
+   * o usuário já ter digitado tudo apagaria o trabalho dele.
+   */
+  async function usarLeitura(leitura: LeituraDeChave) {
+    setErroDeLeitura(null);
+    setChave(leitura.chave);
+    setConsultando(true);
+    setAvisoDaConsulta(null);
+
+    try {
+      const resultado = await despensaApi.consultarNota(leitura.conteudo, leitura.chave);
+      const encontrados = resultado.nota?.itens ?? [];
+
+      if (resultado.consultada && encontrados.length > 0) {
+        setItens(
+          encontrados.map((item) => ({
+            descricao: item.descricao,
+            quantidade: String(item.quantidade).replace('.', ','),
+            valorUnitario: item.valorUnitario.toFixed(2).replace('.', ','),
+          })),
+        );
+        setOrigemDosItens('sefaz');
+        if (resultado.nota?.localCompra) setLocal(resultado.nota.localCompra);
+        if (resultado.nota?.dataCompra) setData(resultado.nota.dataCompra);
+      } else {
+        setOrigemDosItens('manual');
+        setAvisoDaConsulta(resultado.motivo);
+      }
+    } catch {
+      // A nota já está identificada; falhar a consulta não pode custar isso.
+      setOrigemDosItens('manual');
+      setAvisoDaConsulta('Não deu para buscar os itens agora — dá para informar abaixo.');
+    } finally {
+      setConsultando(false);
+    }
+  }
+
   function aoLerCodigo(conteudo: string) {
     const leitura = extrairChaveDeAcesso(conteudo);
     if (!leitura) {
@@ -61,9 +108,8 @@ export function NotaScreen() {
       setErroDeLeitura('Esse código não é de uma nota fiscal. Aponte para o QR da NFC-e.');
       return;
     }
-    setErroDeLeitura(null);
-    setChave(leitura.chave);
     setCameraAberta(false);
+    void usarLeitura(leitura);
   }
 
   function confirmarChaveDigitada() {
@@ -72,8 +118,7 @@ export function NotaScreen() {
       setErroDeLeitura('A chave de acesso tem 44 dígitos.');
       return;
     }
-    setErroDeLeitura(null);
-    setChave(leitura.chave);
+    void usarLeitura(leitura);
   }
 
   const itensValidos = itens
@@ -103,12 +148,23 @@ export function NotaScreen() {
   return (
     <TelaModulo
       titulo="Ler nota"
-      chamada={chave ? 'confira o que entrou' : 'aponte para o QR Code'}
+      chamada={chave ? 'agora informe o que entrou' : 'aponte para o QR Code'}
       modulo="despensa"
       dentroDasAbas={false}
     >
       {acao.erro ? <Aviso mensagem={acao.erro} tom="erro" /> : null}
       {erroDeLeitura ? <Aviso mensagem={erroDeLeitura} tom="atencao" /> : null}
+      {/* Não é erro: é o motivo de a lista ter vindo vazia, e o que fazer. */}
+      {avisoDaConsulta ? <Aviso mensagem={avisoDaConsulta} tom="atencao" /> : null}
+
+      {consultando ? (
+        <Cartao acento={ACENTO}>
+          <Texto variante="corpoForte">Buscando os itens na nota…</Texto>
+          <Texto variante="legenda" cor={cores.tintaMedia}>
+            Consultando a SEFAZ com o código lido.
+          </Texto>
+        </Cartao>
+      ) : null}
 
       {chave === null ? (
         <PassoDaChave
@@ -123,7 +179,7 @@ export function NotaScreen() {
           aoDigitarChave={setChaveDigitada}
           aoConfirmarDigitada={confirmarChaveDigitada}
         />
-      ) : (
+      ) : consultando ? null : (
         <>
           <Cartao acento={ACENTO}>
             <Texto variante="corpo" cor={cores.tintaMedia}>
@@ -138,15 +194,23 @@ export function NotaScreen() {
               aoTocar={() => {
                 setChave(null);
                 setChaveDigitada('');
+                setItens([{ ...ITEM_VAZIO }]);
+                setOrigemDosItens('manual');
+                setAvisoDaConsulta(null);
               }}
             />
           </Cartao>
 
           <Secao titulo="Itens">
-            {/* RN22 — o QR não traz os produtos; quem informa é o usuário. */}
+            {/*
+              RN22 — os itens vieram da SEFAZ ou vêm do usuário, e a frase muda
+              junto: pedir "informe" para uma lista já preenchida mandaria
+              refazer o que está pronto.
+            */}
             <Texto variante="corpo" cor={cores.tintaMedia}>
-              O QR Code identifica a nota, mas não lista os produtos. Informe o que entrou na
-              despensa.
+              {origemDosItens === 'sefaz'
+                ? `${itens.length} item(ns) vieram da nota. Confira e ajuste o que for preciso — o mercado nem sempre nomeia como você.`
+                : 'O QR Code identifica a nota, mas não lista os produtos. Informe o que entrou na despensa.'}
             </Texto>
 
             {itens.map((item, indice) => (
@@ -246,7 +310,17 @@ function PassoDaChave({
 
   return (
     <>
+      {/*
+        RN22 dito antes de escanear, não depois: o que vem do QR é a nota, e os
+        itens dependem do portal responder. Prometer a lista pronta e cair no
+        formulário vazio quebraria a expectativa no pior momento — depois do
+        esforço de mirar a câmera.
+      */}
       <Secao titulo="Escanear">
+        <Texto variante="corpo" cor={cores.tintaMedia}>
+          O código identifica a nota; os itens vêm da consulta da SEFAZ. Quando ela não
+          responde, dá para informar os produtos à mão.
+        </Texto>
         {cameraAberta && permissao?.granted ? (
           <View style={estilos.camera}>
             <CameraView
