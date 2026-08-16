@@ -1,6 +1,7 @@
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 import * as despensaService from '../services/despensaService.js';
+import * as notaFiscalService from '../services/notaFiscalService.js';
 import { usuarioAutenticado } from '../middlewares/autenticar.js';
 import { badRequest } from '../utils/errors.js';
 
@@ -116,6 +117,28 @@ export async function configurarAlerta(req: Request, res: Response) {
     quantidadeMinima ?? null,
   );
   res.status(200).json({ produto });
+}
+
+const consultaSchema = z.object({
+  // O conteúdo cru do QR Code: é a URL inteira que o portal aceita (RN22).
+  conteudoQr: z.string().trim().min(1, 'Informe o conteúdo lido do QR Code.').max(1000),
+  chaveAcesso: z
+    .string()
+    .trim()
+    .regex(/^\d{44}$/, 'A chave de acesso deve ter 44 dígitos.'),
+});
+
+/**
+ * SD06 — POST /api/despensa/notas/consultar
+ *
+ * Tenta trazer os itens da nota antes de o usuário digitar. Responde 200 mesmo
+ * quando não consegue: portal fora do ar ou UF sem suporte não são erro do
+ * pedido, são o caso previsto em que o app segue no preenchimento manual.
+ */
+export async function consultarNota(req: Request, res: Response) {
+  usuarioAutenticado(req);
+  const { conteudoQr, chaveAcesso } = consultaSchema.parse(req.body);
+  res.status(200).json(await notaFiscalService.consultar(conteudoQr, chaveAcesso));
 }
 
 /** SD06 — POST /api/despensa/notas */

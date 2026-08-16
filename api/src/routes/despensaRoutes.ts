@@ -19,5 +19,7 @@ despensaRoutes.put(
   asyncHandler(despensaController.configurarAlerta),
 );
 
+// Antes de `/notas`: a consulta não grava nada, só adianta os itens (RN22).
+despensaRoutes.post('/notas/consultar', asyncHandler(despensaController.consultarNota));
 despensaRoutes.post('/notas', asyncHandler(despensaController.processarNota));
 despensaRoutes.get('/notas', asyncHandler(despensaController.listarNotas));
