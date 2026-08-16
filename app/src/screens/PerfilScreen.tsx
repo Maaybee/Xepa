@@ -6,8 +6,9 @@
  * prática quase nunca está disponível.
  *
  * Layout na forma da tela de conta do template: medalhão redondo + nome + email
- * no topo, filete, e o "sair" como botão suave no pé. Como o avatar da API é
- * texto e não imagem, o medalhão mostra a inicial do nome.
+ * no topo, filete, e o "sair" como botão suave no pé. O avatar é desenhado por
+ * `Avatar`, que casa cada registro do seed com um ícone — a `url` que a API
+ * devolve não é servida por ninguém.
  */
 
 import { useState } from 'react';
@@ -20,8 +21,10 @@ import { useAcao } from '@/hooks/useAcao';
 import { TelaModulo } from '@/components/common/TelaModulo';
 import { Secao } from '@/components/common/Secao';
 import { Aviso } from '@/components/ui/Aviso';
+import { Avatar } from '@/components/ui/Avatar';
 import { Botao } from '@/components/ui/Botao';
 import { Texto } from '@/components/ui/Texto';
+import type { Avatar as AvatarDaApi } from '@/types/api';
 import { cores, espaco, raio } from '@/theme';
 
 export function PerfilScreen() {
@@ -46,8 +49,6 @@ export function PerfilScreen() {
     setSalvandoVinculo(false);
   }
 
-  const inicial = perfil?.nome?.trim().charAt(0).toUpperCase() ?? '?';
-
   return (
     <TelaModulo
       titulo="Perfil"
@@ -55,16 +56,12 @@ export function PerfilScreen() {
       erro={apoio.erro}
       aoRecarregar={apoio.recarregar}
       dentroDasAbas={false}
-    >
       saida="fechar"
+    >
       {acao.erro ? <Aviso mensagem={acao.erro} tom="erro" /> : null}
 
       <View style={estilos.identidade}>
-        <View style={estilos.medalhao}>
-          <Texto variante="titulo" cor={cores.lilasForte}>
-            {inicial}
-          </Texto>
-        </View>
+        <Avatar avatar={perfil?.avatar} nome={perfil?.nome} tamanho={64} />
         <View style={estilos.nome}>
           <Texto variante="tituloMenor" numberOfLines={1}>
             {perfil?.nome}
@@ -78,13 +75,13 @@ export function PerfilScreen() {
       <View style={estilos.filete} />
 
       <Secao titulo="Avatar">
-        <View style={estilos.grade}>
+        <View style={estilos.gradeAvatares}>
           {(apoio.dados?.avatares.avatares ?? []).map((avatar) => {
             const escolhido = perfil?.avatar?.id === avatar.id;
             return (
-              <Chip
+              <EscolhaDeAvatar
                 key={avatar.id}
-                rotulo={avatar.descricao}
+                avatar={avatar}
                 escolhido={escolhido}
                 aoTocar={() => void atualizar({ avatarId: escolhido ? null : avatar.id })}
               />
@@ -130,6 +127,42 @@ export function PerfilScreen() {
   );
 }
 
+/**
+ * Um avatar escolhível: o desenho, o nome embaixo e o estado de escolha no
+ * próprio medalhão. Tocar no que já está escolhido desfaz a escolha (RN04
+ * permite não ter avatar), e é o rótulo que conta isso ao leitor de tela.
+ */
+function EscolhaDeAvatar({
+  avatar,
+  escolhido,
+  aoTocar,
+}: {
+  avatar: AvatarDaApi;
+  escolhido: boolean;
+  aoTocar(): void;
+}) {
+  return (
+    <Pressable
+      onPress={aoTocar}
+      accessibilityRole="button"
+      accessibilityLabel={escolhido ? `${avatar.descricao}, escolhido` : avatar.descricao}
+      accessibilityState={{ selected: escolhido }}
+      style={({ pressed }) => [estilos.escolha, pressed && estilos.chipPressionado]}
+    >
+      <View style={[estilos.aro, escolhido && estilos.aroEscolhido]}>
+        <Avatar avatar={avatar} tamanho={56} destacado={escolhido} />
+      </View>
+      <Texto
+        variante="corpoForte"
+        cor={escolhido ? cores.lilasForte : cores.tintaMedia}
+        numberOfLines={1}
+      >
+        {avatar.descricao}
+      </Texto>
+    </Pressable>
+  );
+}
+
 /** Chip de escolha única dentro de um grupo — o mesmo do filtro do template. */
 function Chip({
   rotulo,
@@ -164,14 +197,6 @@ const estilos = StyleSheet.create({
     alignItems: 'center',
     gap: espaco.lg,
   },
-  medalhao: {
-    width: 64,
-    height: 64,
-    borderRadius: 27,
-    backgroundColor: cores.lilasTinta,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   nome: {
     flex: 1,
     gap: 2,
@@ -184,6 +209,26 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: espaco.sm,
+  },
+  gradeAvatares: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: espaco.lg,
+  },
+  escolha: {
+    width: 72,
+    alignItems: 'center',
+    gap: espaco.xs,
+  },
+  aro: {
+    padding: 3,
+    borderRadius: raio.pilula,
+    borderWidth: 2,
+    // O aro existe sempre, transparente, para que escolher não mexa no layout.
+    borderColor: 'transparent',
+  },
+  aroEscolhido: {
+    borderColor: cores.lilasForte,
   },
   chip: {
     borderRadius: raio.pilula,
