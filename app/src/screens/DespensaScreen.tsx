@@ -31,6 +31,7 @@ import { EstadoVazio } from '@/components/ui/Estados';
 import { Texto } from '@/components/ui/Texto';
 import { cores, espaco } from '@/theme';
 import { quantidade } from '@/utils/formato';
+import { desenhoDoItem } from '@/utils/categoriaVisual';
 
 const ACENTO = cores.modulo.despensa;
 
@@ -142,10 +143,14 @@ export function DespensaScreen() {
             <CartaoItem
               key={produto.id}
               nome={produto.nome}
-              apoio={produto.categoria ?? undefined}
+              // Sem categoria digitada, a linha de apoio mostra a inferida —
+              // é a mesma leitura que decidiu o ícone, dita por extenso.
+              apoio={produto.categoria ?? desenhoDoItem(produto.nome).rotulo}
               destaque={`${quantidade(produto.quantidadeAtual)} ${produto.unidade}`}
-              icone={produto.emAlerta ? 'alert-circle' : 'package'}
-              acento={produto.emAlerta ? cores.atencao : ACENTO}
+              // Em alerta, o cartão fala do estado; fora dele, da categoria.
+              {...(produto.emAlerta
+                ? { icone: 'alert-circle' as const, acento: cores.atencao }
+                : { desenho: desenhoDoItem(produto.nome, produto.categoria) })}
               aoTocar={() =>
                 setEmBaixa((atual) => (atual?.id === produto.id ? null : produto))
               }

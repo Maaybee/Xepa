@@ -3,13 +3,19 @@
  * produto, nome em 16, uma linha de apoio em 14 e o valor em 18 com o botão
  * redondo no canto.
  *
- * No template o topo é foto do produto. A API do Xepa não guarda imagem de
- * item, então o lugar da foto recebe um medalhão tingido com o acento do
- * módulo — mesma silhueta, sem inventar dado que não existe.
+ * No template o topo é foto do produto. O Xepa não tem foto de item e não tem
+ * de onde tirar — a nota identifica o produto pelo código interno do mercado,
+ * não pelo código de barras —, então o lugar da foto recebe um medalhão com
+ * ícone. Mesma silhueta, sem inventar dado que não existe.
+ *
+ * Quem passa `desenho` (a despensa, via `desenhoDoItem`) manda ícone e cor de
+ * categoria; quem não passa fica com o acento do módulo, que é o caso das
+ * outras telas.
  */
 
 import { Pressable, StyleSheet, View } from 'react-native';
-import { Feather } from '@expo/vector-icons';
+import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
+import type { DesenhoDoItem } from '@/utils/categoriaVisual';
 import { cores, espaco, raio } from '@/theme';
 import { Texto } from './Texto';
 
@@ -23,6 +29,14 @@ interface Props {
   destaque?: string | undefined;
   icone?: NomeDeIcone;
   acento?: string;
+  /**
+   * Ícone e cor de categoria, no lugar da foto do template.
+   *
+   * Quando vem junto de `icone`, o `icone` vence: ele é o estado (item em
+   * alerta), e estado tem precedência sobre identidade — saber que o arroz
+   * está acabando importa mais que saber que arroz é mercearia.
+   */
+  desenho?: DesenhoDoItem | undefined;
   aoTocar?: (() => void) | undefined;
   /** Ação do botão redondo no canto. Sem ela o botão não aparece. */
   aoAgir?: (() => void) | undefined;
@@ -38,13 +52,19 @@ export function CartaoItem({
   nome,
   apoio,
   destaque,
-  icone = 'package',
+  icone,
   acento = cores.lilas,
+  desenho,
   aoTocar,
   aoAgir,
   iconeAcao = 'plus',
   rotuloAcao,
 }: Props) {
+  // `icone` explícito é estado e vem na frente; `desenho` é a identidade da
+  // categoria; sem nenhum dos dois, o pacote genérico no acento de quem chamou.
+  const usarCategoria = !icone && desenho;
+  const tinta = usarCategoria ? desenho.cor : acento;
+
   return (
     <Pressable
       onPress={aoTocar}
@@ -52,8 +72,17 @@ export function CartaoItem({
       accessibilityRole={aoTocar ? 'button' : undefined}
       style={({ pressed }) => [estilos.cartao, pressed && aoTocar ? estilos.pressionado : null]}
     >
-      <View style={[estilos.medalhao, { backgroundColor: `${acento}1F` }]}>
-        <Feather name={icone} size={34} color={acento} />
+      <View style={[estilos.medalhao, { backgroundColor: `${tinta}1F` }]}>
+        {usarCategoria ? (
+          <MaterialCommunityIcons
+            name={desenho.icone}
+            size={34}
+            color={tinta}
+            accessibilityLabel={desenho.rotulo}
+          />
+        ) : (
+          <Feather name={icone ?? 'package'} size={34} color={tinta} />
+        )}
       </View>
 
       <View style={estilos.texto}>
